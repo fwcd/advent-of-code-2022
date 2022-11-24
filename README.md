@@ -30,7 +30,9 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 
 ## Previous years
 
-- [`advent-of-code-2021`](https://github.com/fwcd/advent-of-code-2021).
-- [`advent-of-code-2020`](https://github.com/fwcd/advent-of-code-2020).
-- [`advent-of-code-2019`](https://github.com/fwcd/advent-of-code-2019).
-- [`advent-of-code-2015`](https://github.com/fwcd/advent-of-code-2015).
+My solutions to the previous challenges can be found here:
+
+- [`advent-of-code-2021`](https://github.com/fwcd/advent-of-code-2021)
+- [`advent-of-code-2020`](https://github.com/fwcd/advent-of-code-2020)
+- [`advent-of-code-2019`](https://github.com/fwcd/advent-of-code-2019)
+- [`advent-of-code-2015`](https://github.com/fwcd/advent-of-code-2015)
