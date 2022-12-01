@@ -1,1 +1,6 @@
-[]
+[
+  {
+    "lang": "applescript",
+    "path": "day01/src/day01.applescript"
+  }
+]
