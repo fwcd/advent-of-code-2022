@@ -130,6 +130,10 @@
           "yaml-frontmatter",
           "z80"
         ]
+      },
+      "path": {
+        "type": "string",
+        "description": "The path to the main source file"
       }
     },
     "required": ["lang", "path"]
