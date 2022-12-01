@@ -1,19 +1,16 @@
-name: Day 1
+name: Run (macOS)
 
 on:
   push:
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  run:
+    runs-on: macos-latest
+    name: Day ${{ matrix.day }}
 
     strategy:
       matrix:
-        include:
-        - os: macos-latest
-          day: ['01']
-        - os: ubuntu-latest
-          day: []
+        day: ['01']
 
     steps:
     - uses: actions/checkout@v3

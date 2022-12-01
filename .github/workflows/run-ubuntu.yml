@@ -1,0 +1,23 @@
+name: Run (Ubuntu)
+
+on:
+  push:
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    name: Day ${{ matrix.day }}
+
+    strategy:
+      matrix:
+        day: []
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Bootstrap
+      run: ./bootstrap
+      working-directory: 'day${{ matrix.day }}'
+    - name: Run
+      run: ./run
+      working-directory: 'day${{ matrix.day }}'
+
