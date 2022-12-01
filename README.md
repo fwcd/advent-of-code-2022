@@ -1,5 +1,8 @@
 # Advent of Code 2022
 
+[![Run (macOS)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml/badge.svg)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml)
+[![Run (Ubuntu)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-ubuntu.yml/badge.svg)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-ubuntu.yml)
+
 My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), written in 25 different programming languages.
 
 - [x] Day 01: AppleScript
