@@ -1,0 +1,26 @@
+name: Day 1
+
+on:
+  push:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+
+    strategy:
+      matrix:
+        include:
+        - os: macos-latest
+          day: ['01']
+        - os: ubuntu-latest
+          day: []
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Bootstrap
+      run: ./bootstrap
+      working-directory: 'day${{ matrix.day }}'
+    - name: Run
+      run: ./run
+      working-directory: 'day${{ matrix.day }}'
+

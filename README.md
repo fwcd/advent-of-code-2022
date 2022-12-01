@@ -28,6 +28,10 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [ ] Day 24
 - [ ] Day 25
 
+## Running
+
+Each day includes two scripts, `./bootstrap` and `./run`: The former installs the required dependencies and the latter builds and runs the program.
+
 ## Previous years
 
 My solutions to the previous challenges can be found here:
