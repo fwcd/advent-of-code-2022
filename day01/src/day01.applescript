@@ -1,3 +1,5 @@
+#!/usr/bin/osascript
+
 on swap(xs, i, j)
 	set tmp to item i of xs
 	set item i of xs to item j of xs
@@ -59,5 +61,4 @@ quickSort(inventories, 1, inventories's length)
 set part1 to item (inventories's length) of inventories
 set part2 to part1 + (item ((inventories's length) - 1) of inventories) + (item ((inventories's length) - 2) of inventories)
 
-display dialog "Part 1: " & part1
-display dialog "Part 2: " & part2
+"Part 1: " & part1 & "\nPart 2: " & part2
