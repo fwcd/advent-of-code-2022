@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing Vala compiler via Homebrew..."
+    brew install vala
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing Vala compiler via APT..."
+      sudo add-apt-repository ppa:vala-team
+      sudo apt-get update
+      sudo apt-get install -y valac
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
