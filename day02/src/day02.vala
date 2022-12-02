@@ -4,11 +4,22 @@ class Day02 : GLib.Object {
     PAPER = 1,
     SCISSORS = 2;
 
+    /**
+     * The outcome against the other move.
+     * (0 -> loss, 1 -> draw, 2 -> win)
+     */
     public int against(Move other) {
+      // Observe: We win iff we are 'one step ahead'
+      // of them (mod 3). We thus only need to compute
+      // the difference/distance and add 1 to get it
+      // into the [0, 2] range.
       return ((this - other) + 4) % 3;
     }
 
+    /** The move that produces the given outcome. */
     public Move produce(int outcome) {
+      // Again, we view (outcome - 1) as a kind of difference (mod 3)
+      // and add it to us to get the desired outcome.
       return (this + outcome + 2) % 3;
     }
 
