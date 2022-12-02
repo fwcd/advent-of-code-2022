@@ -6,7 +6,7 @@
 My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), written in 25 different programming languages.
 
 - [x] Day 01: AppleScript
-- [ ] Day 02: Vala
+- [x] Day 02: Vala
 - [ ] Day 03
 - [ ] Day 04
 - [ ] Day 05
