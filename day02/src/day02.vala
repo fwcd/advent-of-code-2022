@@ -23,10 +23,12 @@ class Day02 : GLib.Object {
       return (this + outcome + 2) % 3;
     }
 
+    /** The score against the given move. */
     public int score_against(Move other) {
       return 3 * against(other) + this + 1;
     }
 
+    /** Parses a move from the given character. */
     public static Move parse(char raw) {
       switch (raw) {
       case 'A': case 'X': return ROCK;
@@ -51,7 +53,11 @@ class Day02 : GLib.Object {
       while ((line = dis.read_line()) != null) {
         Move theirs = Move.parse(line[0]);
         Move ours = Move.parse(line[2]);
+
         part1 += ours.score_against(theirs);
+        // We use another trick here: Since moves (rock, paper, scissors)
+        // are isomorphic to outcomes (lose, draw, win), we just pretend
+        // that ours (despite being parsed as a move) is an outcome.
         part2 += theirs.produce(ours).score_against(theirs);
       }
 
