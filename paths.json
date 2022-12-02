@@ -1,7 +1,8 @@
 [
   {
     "lang": "applescript",
-    "path": "day01/src/day01.applescript"
+    "path": "day01/src/day01.applescript",
+    "encoding": "macintosh"
   },
   {
     "lang": "vala",
