@@ -8,14 +8,6 @@ pub fn charToIndex(c: u8) usize {
     }
 }
 
-pub fn indexToChar(i: usize) u8 {
-    if (i >= 26) {
-        return @truncate(u8, i - 26) + 'A';
-    } else {
-        return @truncate(u8, i + 'a');
-    }
-}
-
 pub fn score(c: u8) u32 {
     return @truncate(u32, charToIndex(c)) + 1;
 }
