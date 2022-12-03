@@ -7,7 +7,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 
 - [x] Day 01: AppleScript
 - [x] Day 02: Vala
-- [ ] Day 03
+- [ ] Day 03: Zig
 - [ ] Day 04
 - [ ] Day 05
 - [ ] Day 06

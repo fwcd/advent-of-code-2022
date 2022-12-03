@@ -7,5 +7,9 @@
   {
     "lang": "vala",
     "path": "day02/src/day02.vala"
+  },
+  {
+    "lang": "zig",
+    "path": "day03/src/main.zig"
   }
 ]

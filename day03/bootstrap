@@ -1,0 +1,24 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing Zig compiler via Homebrew..."
+    brew install zig
+    ;;
+  Linux)
+    if command -v snap &> /dev/null; then
+      echo "==> Installing Zig compiler via Snap..."
+      snap install zig --classic --beta
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
