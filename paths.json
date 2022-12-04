@@ -11,5 +11,9 @@
   {
     "lang": "zig",
     "path": "day03/src/main.zig"
+  },
+  {
+    "lang": "scheme",
+    "path": "day04/src/day04.rkt"
   }
 ]

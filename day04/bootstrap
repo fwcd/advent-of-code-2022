@@ -1,0 +1,27 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing Racket via Homebrew..."
+    brew install minimal-racket
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing Vala compiler via APT..."
+      sudo add-apt-repository ppa:plt/racket
+      sudo apt-get update
+      sudo apt-get install -y racket
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
