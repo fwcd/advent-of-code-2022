@@ -15,5 +15,9 @@
   {
     "lang": "scheme",
     "path": "day04/src/day04.rkt"
+  },
+  {
+    "lang": "clojure",
+    "path": "day05/src/day05.clj"
   }
 ]

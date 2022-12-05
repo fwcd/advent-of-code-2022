@@ -9,7 +9,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 02: Vala
 - [x] Day 03: Zig
 - [x] Day 04: Racket
-- [ ] Day 05
+- [ ] Day 05: Clojure
 - [ ] Day 06
 - [ ] Day 07
 - [ ] Day 08
