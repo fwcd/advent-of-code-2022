@@ -39,7 +39,8 @@
   (reduce perform-inst stacks insts))
 
 (defn -main [& args]
-  (let [raw (slurp "resources/demo.txt")
+  (let [raw (slurp "resources/input.txt")
         [stacks insts] (parse-input raw)
-        result (perform-insts stacks insts)]
-    (println result)))
+        result (perform-insts stacks insts)
+        part1 (str/join (map first result))]
+    (printf "Part 1: %s%n" part1)))
