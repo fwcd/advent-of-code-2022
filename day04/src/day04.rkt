@@ -7,19 +7,34 @@
 (define (parse-line line)
   (map parse-range (string-split line ",")))
 
-(define (is-subrange parent child)
-  (match (list parent child)
+(define (is-subrange range child)
+  (match (list range child)
     [(list (list s1 e1) (list s2 e2))
         (and (<= s1 s2)
              (<= e2 e1))]))
 
-(define (satisfies-part1 ranges)
-  (match ranges
-    [(list left right)
-        (or (is-subrange left right)
-            (is-subrange right left))]))
+(define (contains range x)
+  (match range
+    [(list s e) (and (<= s x) (<= x e))]))
 
-(let* ([lines (file->lines "resources/input.txt")]
-       [ranges (map parse-line lines)]
-       [part1 (length (filter identity (map satisfies-part1 ranges)))])
-  (printf "Part 1: ~a\n" part1))
+(define (overlaps range1 range2)
+  (match (list range1 range2)
+    [(list (list s1 e1) (list s2 e2))
+        (or (contains range1 s2)
+            (contains range1 e2))]))
+
+(define (line-satisfies f)
+  (lambda (ranges)
+    (match ranges
+      [(list left right)
+          (or (f left right)
+              (f right left))])))
+
+(define (count-satisfying f lines)
+  (length (filter identity (map (line-satisfies f) lines))))
+
+(let* ([lines (map parse-line (file->lines "resources/input.txt"))]
+       [part1 (count-satisfying is-subrange lines)]
+       [part2 (count-satisfying overlaps lines)])
+  (printf "Part 1: ~a\n" part1)
+  (printf "Part 2: ~a\n" part2))
