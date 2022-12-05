@@ -18,6 +18,6 @@
   },
   {
     "lang": "clojure",
-    "path": "day05/src/day05.clj"
+    "path": "day05/src/day05/core.clj"
   }
 ]
