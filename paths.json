@@ -19,5 +19,9 @@
   {
     "lang": "clojure",
     "path": "day05/src/day05/core.clj"
+  },
+  {
+    "lang": "cmake",
+    "path": "day06/CMakeLists.txt"
   }
 ]
