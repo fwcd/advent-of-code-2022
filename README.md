@@ -10,7 +10,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 03: Zig
 - [x] Day 04: Racket
 - [x] Day 05: Clojure
-- [ ] Day 06: CMake
+- [x] Day 06: CMake
 - [ ] Day 07
 - [ ] Day 08
 - [ ] Day 09
