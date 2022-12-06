@@ -1,2 +1,45 @@
 project(day06)
-message("Hello world")
+cmake_minimum_required(VERSION 3.17)
+
+set(window_length 4)
+
+file(READ resources/input.txt raw_input)
+string(STRIP "${raw_input}" input)
+string(LENGTH "${input}" length)
+
+math(EXPR window_preend "${window_length} - 2")
+math(EXPR window_end "${window_length} - 1")
+math(EXPR end "${length} - 1")
+
+foreach(i RANGE "${end}")
+  string(SUBSTRING "${input}" "${i}" "1" char)
+
+  # Update window of last ${window_length} chars
+  foreach(j RANGE "${window_preend}")
+    math(EXPR next "${j} + 1")
+    set("last_${j}" "${last_${next}}")
+  endforeach()
+  set("last_${window_end}" "${char}")
+
+  # Check if window is distinct
+  if("${i}" GREATER_EQUAL "${window_end}")
+    set(found_window ON)
+    foreach(j1 RANGE "${window_preend}")
+      math(EXPR next "${j1} + 1")
+      foreach(j2 RANGE "${next}" "${window_end}")
+        if("${last_${j1}}" STREQUAL "${last_${j2}}")
+          set(found_window OFF)
+          break()
+        endif()
+      endforeach()
+      if(NOT "${found_window}")
+        break()
+      endif()
+    endforeach()
+    if("${found_window}")
+      math(EXPR part1 "${i} + 1")
+      message("Part 1: ${part1}")
+      break()
+    endif()
+  endif()
+endforeach()
