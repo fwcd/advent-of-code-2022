@@ -51,13 +51,13 @@ sub cd {
   }
 }
 
-sub sumDirectorySizes {
-  my ($maxsize, $tree) = @_;
+sub computeDirectorySizes {
+  my ($maxsize, $tree, $output) = @_;
   my $total = 0;
   my $recursive = 0;
   while (my ($key, $value) = each %$tree) {
     if ("$value" =~ /^HASH.*/) {
-      my ($subtotal, $subrecursive) = sumDirectorySizes($maxsize, $value);
+      my ($subtotal, $subrecursive) = computeDirectorySizes($maxsize, $value, $output);
       $total += $subtotal;
       $recursive += $subrecursive;
     } else {
@@ -67,6 +67,7 @@ sub sumDirectorySizes {
   if ($total <= $maxsize) {
     $recursive += $total;
   }
+  push @$output, $total;
   return ($total, $recursive);
 }
 
@@ -94,6 +95,19 @@ close(FH);
 
 # Compute results
 
-my ($total1, $part1) = sumDirectorySizes(100000, \%fs);
-
+my $maxsize = 100000;
+my @dirsizes;
+my ($total, $part1) = computeDirectorySizes($maxsize, \%fs, \@dirsizes);
 print "Part 1: $part1\n";
+
+my $available = 70000000;
+my $required = 30000000;
+my $unused = $available - $total;
+my $min = $available; # Almost infinity
+for my $size (@dirsizes) {
+  if ($size >= $unused && $size < $min) {
+    $min = $size;
+  }
+}
+my $part2 = $min;
+print "Part 2: $part2\n";
