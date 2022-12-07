@@ -23,5 +23,9 @@
   {
     "lang": "cmake",
     "path": "day06/CMakeLists.txt"
+  },
+  {
+    "lang": "perl",
+    "path": "day07/src/day07.pl"
   }
 ]

@@ -11,7 +11,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 04: Racket
 - [x] Day 05: Clojure
 - [x] Day 06: CMake
-- [ ] Day 07
+- [ ] Day 07: Perl
 - [ ] Day 08
 - [ ] Day 09
 - [ ] Day 10
