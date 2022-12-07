@@ -6,16 +6,6 @@ use feature qw(switch);
 my @pwd;
 my %fs;
 
-sub printTree {
-  my ($indent, $tree) = @_;
-  while (my ($key, $value) = each %$tree) {
-    print "$indent$key -> $value\n";
-    if ("$value" =~ /^HASH.*/) {
-      printTree("$indent  ", $value);
-    }
-  }
-}
-
 sub get {
   my ($path, $tree) = @_;
   my $len = scalar(@$path);
@@ -36,7 +26,6 @@ sub insertFile {
 
 sub insertDir {
   my ($name) = @_;
-  print "Pwd: @pwd\n";
   my ($tree) = get(\@pwd, \%fs);
   $tree->{$name} = {};
 }
@@ -79,14 +68,10 @@ while (<FH>) {
   if (my ($command, $arg) = ($_ =~ m/\$\s+(\w+)\s*(.*)/)) {
     if ($command eq 'cd') {
       cd($arg);
-      my $path = join '/', @pwd;
-      print "Now at /$path\n";
     }
   } elsif (my ($size, $name) = ($_ =~ m/(\d+)\s+(.+)/)) {
-    print "File $name of size $size\n";
     insertFile($name, $size);
   } elsif (my ($name) = ($_ =~ m/dir\s+(.+)/)) {
-    print "Directory $name\n";
     insertDir($name);
   }
 }
