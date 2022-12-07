@@ -105,7 +105,7 @@ my $required = 30000000;
 my $unused = $available - $total;
 my $min = $available; # Almost infinity
 for my $size (@dirsizes) {
-  if ($size >= $unused && $size < $min) {
+  if ($size >= ($required - $unused) && $size < $min) {
     $min = $size;
   }
 }
