@@ -3,8 +3,6 @@ use warnings;
 use strict;
 use feature qw(switch);
 
-open(FH, '<', 'resources/demo.txt') or die $!;
-
 my @pwd;
 my %fs;
 
@@ -53,6 +51,29 @@ sub cd {
   }
 }
 
+sub sumDirectorySizes {
+  my ($maxsize, $tree) = @_;
+  my $total = 0;
+  my $recursive = 0;
+  while (my ($key, $value) = each %$tree) {
+    if ("$value" =~ /^HASH.*/) {
+      my ($subtotal, $subrecursive) = sumDirectorySizes($maxsize, $value);
+      $total += $subtotal;
+      $recursive += $subrecursive;
+    } else {
+      $total += $value;
+    }
+  }
+  if ($total <= $maxsize) {
+    $recursive += $total;
+  }
+  return ($total, $recursive);
+}
+
+# Parse input
+
+open(FH, '<', 'resources/input.txt') or die $!;
+
 while (<FH>) {
   if (my ($command, $arg) = ($_ =~ m/\$\s+(\w+)\s*(.*)/)) {
     if ($command eq 'cd') {
@@ -67,9 +88,12 @@ while (<FH>) {
     print "Directory $name\n";
     insertDir($name);
   }
-  print "<tree>\n";
-  printTree("", \%fs);
-  print "</tree>\n";
 }
 
 close(FH);
+
+# Compute results
+
+my ($total1, $part1) = sumDirectorySizes(100000, \%fs);
+
+print "Part 1: $part1\n";
