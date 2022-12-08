@@ -12,7 +12,7 @@ case $(uname -s) in
     . /etc/os-release
     if [ "$ID_LIKE" == debian ]; then
       echo "==> Installing OpenJDK via APT..."
-      sudo apt-get install -y openjdk-18-jdk
+      sudo apt-get install -y openjdk-17-jdk
     else
       echo "Unsupported Linux distribution!"
       exit 1
