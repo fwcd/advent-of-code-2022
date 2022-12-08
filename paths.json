@@ -27,5 +27,9 @@
   {
     "lang": "perl",
     "path": "day07/src/day07.pl"
+  },
+  {
+    "lang": "scala",
+    "path": "day08/app/src/main/scala/day08/App.scala"
   }
 ]

@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing OpenJDK via Homebrew..."
+    brew install --cask openjdk
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing OpenJDK via APT..."
+      sudo apt-get install -y openjdk-18-jdk
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
