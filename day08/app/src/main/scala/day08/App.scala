@@ -19,19 +19,19 @@ object App {
   def cols(grid: List[List[Int]]): Iterable[Iterable[(Pos, Int)]] = rows(grid.transpose)
     .map { col => col.map { v => (v._1.swap, v._2) } }
 
-  def countTotalVisible(grid: List[List[Int]]) =
+  def totalVisible(grid: List[List[Int]]): Set[Pos] =
     (rows(grid).concat(cols(grid)))
       .flatMap { v => List(v, v.toList.reverse) }
       .flatMap { v => filterVisible(v) }
-      .toList
-      .distinct
-      .length
+      .toSet
 
   def main(args: Array[String]): Unit = {
     val grid = Source.fromResource("input.txt").getLines()
       .map { s => s.map { c => c.toInt }.toList }
       .toList
-    val part1 = countTotalVisible(grid)
+
+    val visible = totalVisible(grid)
+    val part1 = visible.size
 
     println(s"Part 1: $part1")
   }
