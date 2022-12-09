@@ -16,6 +16,8 @@ description:         Day 9 solution in Haskell
 
 dependencies:
 - base >= 4.7 && < 5
+- transformers >= 0.6 && < 1
+- mtl >= 2.3 && < 3
 
 ghc-options:
 - -Wall
