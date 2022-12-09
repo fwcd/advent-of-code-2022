@@ -31,5 +31,9 @@
   {
     "lang": "scala",
     "path": "day08/app/src/main/scala/day08/App.scala"
+  },
+  {
+    "lang": "haskell",
+    "path": "day09/app/Main.hs"
   }
 ]
