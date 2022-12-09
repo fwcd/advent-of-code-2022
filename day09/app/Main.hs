@@ -6,6 +6,9 @@ import Data.Maybe (mapMaybe)
 data Pos = Pos Int Int
   deriving (Show, Eq, Ord)
 
+zipPos :: (Int -> Int -> Int) -> Pos -> Pos -> Pos
+zipPos f (Pos i1 j1) (Pos i2 j2) = Pos (f i1 i2) (f j1 j2)
+
 norm :: Pos -> Int
 norm (Pos i j) = abs (i + j)
 
@@ -33,6 +36,17 @@ initialState = BridgeState
   , tailPos = Pos 0 0
   , visited = S.fromList [Pos 0 0]
   }
+
+pretty :: BridgeState -> String
+pretty s = unlines $ [[format (Pos i j) | j <- [j1..j2]] | i <- [i1..i2]]
+  where
+    ps = (headPos s : tailPos s : S.toList (visited s))
+    Pos i1 j1 = foldr1 (zipPos min) ps
+    Pos i2 j2 = foldr1 (zipPos max) ps
+    format p | p == headPos s         = 'H'
+             | p == tailPos s         = 'T'
+             | p `S.member` visited s = '#'
+             | otherwise              = '.'
 
 data Dir = L | R | U | D
   deriving (Read, Show, Eq, Ord)
@@ -88,4 +102,5 @@ main = do
   lines <- lines <$> readFile "resources/demo.txt"
   let insts = mapMaybe parseInst lines
       finalState = foldl (flip performInst) initialState insts
-  print (S.size (visited finalState))
+  print finalState
+  putStrLn (pretty finalState)
