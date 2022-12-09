@@ -3,8 +3,6 @@ module Main (main) where
 import qualified Data.Set as S
 import Data.Maybe (mapMaybe)
 
-import Debug.Trace
-
 data Pos = Pos Int Int
   deriving (Show, Eq, Ord)
 
@@ -78,7 +76,7 @@ moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
 -- TODO: Implement moveVertically in terms of moveHorizontally with parameter swapping
 
 moveVertically :: Int -> BridgeState -> BridgeState
-moveVertically n s = trace (show (dist h' t)) $ BridgeState { headPos = h', tailPos = t', visited = v' }
+moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
   where
     h@(Pos h1 h2) = headPos s
     t@(Pos t1 t2) = tailPos s
@@ -93,16 +91,15 @@ moveVertically n s = trace (show (dist h' t)) $ BridgeState { headPos = h', tail
                          | otherwise = range (Pos (t1 + signum n) h2) t'
 
 performInst :: Inst -> BridgeState -> BridgeState
-performInst (Inst d n) s = trace (show d ++ show n ++ "\n" ++ pretty s' ++ "\n") s'
-  where s' = case d of
-          L -> moveHorizontally (-n) s
-          R -> moveHorizontally n s
-          U -> moveVertically (-n) s
-          D -> moveVertically n s
+performInst (Inst d n) = case d of
+  L -> moveHorizontally (-n)
+  R -> moveHorizontally n
+  U -> moveVertically (-n)
+  D -> moveVertically n
 
 main :: IO ()
 main = do
-  lines <- lines <$> readFile "resources/demo.txt"
+  lines <- lines <$> readFile "resources/input.txt"
   let insts = mapMaybe parseInst lines
       finalState = foldl (flip performInst) initialState insts
-  putStrLn (pretty finalState)
+  putStrLn $ "Part 1: " ++ show (S.size (visited finalState))
