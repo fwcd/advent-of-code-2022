@@ -12,7 +12,7 @@ zipPos :: (Int -> Int -> Int) -> Pos -> Pos -> Pos
 zipPos f (Pos i1 j1) (Pos i2 j2) = Pos (f i1 i2) (f j1 j2)
 
 norm :: Pos -> Int
-norm (Pos i j) = abs (i + j)
+norm (Pos i j) = max (abs i) (abs j)
 
 dist :: Pos -> Pos -> Int
 dist (Pos i1 j1) (Pos i2 j2) = norm $ Pos (i2 - i1) (j2 - j1)
@@ -78,7 +78,7 @@ moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
 -- TODO: Implement moveVertically in terms of moveHorizontally with parameter swapping
 
 moveVertically :: Int -> BridgeState -> BridgeState
-moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
+moveVertically n s = trace (show (dist h' t)) $ BridgeState { headPos = h', tailPos = t', visited = v' }
   where
     h@(Pos h1 h2) = headPos s
     t@(Pos t1 t2) = tailPos s
