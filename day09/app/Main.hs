@@ -12,6 +12,9 @@ zipPos f (Pos i1 j1) (Pos i2 j2) = Pos (f i1 i2) (f j1 j2)
 norm :: Pos -> Int
 norm (Pos i j) = max (abs i) (abs j)
 
+swap :: Pos -> Pos
+swap (Pos i j) = Pos j i
+
 dist :: Pos -> Pos -> Int
 dist (Pos i1 j1) (Pos i2 j2) = norm $ Pos (i2 - i1) (j2 - j1)
 
@@ -65,13 +68,9 @@ parseInst :: String -> Maybe Inst
 parseInst (d:' ':c) = Just $ Inst (read [d]) (read c)
 parseInst _ = Nothing
 
-moveHorizontally :: Int -> BridgeState Pos -> BridgeState Pos
-moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
+moveHorizontally' :: Int -> Pos -> Pos -> (Pos, Pos, [Pos])
+moveHorizontally' n h@(Pos h1 h2) t@(Pos t1 t2) = (h', t', dv)
   where
-    h@(Pos h1 h2) = headPos s
-    t@(Pos t1 t2) = tailPos s
-    v   = visited s
-    v'  = insertAll dv v
     h2' = h2 + n
     t2' = h2' + signum (t2 - h2')
     h' = Pos h1 h2'
@@ -80,22 +79,13 @@ moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
                 where v' | h1 == t1  = range t t'
                          | otherwise = range (Pos h1 (t2 + signum n)) t'
 
--- TODO: Implement moveVertically in terms of moveHorizontally with parameter swapping
+moveHorizontally :: Int -> BridgeState Pos -> BridgeState Pos
+moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = insertAll dv $ visited s }
+  where (h', t', dv) = moveHorizontally' n (headPos s) (tailPos s)
 
 moveVertically :: Int -> BridgeState Pos -> BridgeState Pos
-moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
-  where
-    h@(Pos h1 h2) = headPos s
-    t@(Pos t1 t2) = tailPos s
-    v   = visited s
-    v'  = insertAll dv v
-    h1' = h1 + n
-    t1' = h1' + signum (t1 - h1')
-    h' = Pos h1' h2
-    (t', dv) | dist h' t <= 1 = (t, [])
-             | otherwise      = (Pos t1' h2, v')
-                where v' | h2 == t2  = range t t'
-                         | otherwise = range (Pos (t1 + signum n) h2) t'
+moveVertically n s = BridgeState { headPos = swap h', tailPos = swap t', visited = insertAll (swap <$> dv) $ visited s }
+  where (h', t', dv) = moveHorizontally' n (swap (headPos s)) (swap (tailPos s))
 
 performInst1 :: Inst -> BridgeState Pos -> BridgeState Pos
 performInst1 (Inst d n) = case d of
