@@ -97,16 +97,22 @@ moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
                 where v' | h2 == t2  = range t t'
                          | otherwise = range (Pos (t1 + signum n) h2) t'
 
-performInst :: Inst -> BridgeState Pos -> BridgeState Pos
-performInst (Inst d n) = case d of
+performInst1 :: Inst -> BridgeState Pos -> BridgeState Pos
+performInst1 (Inst d n) = case d of
   L -> moveHorizontally (-n)
   R -> moveHorizontally n
   U -> moveVertically (-n)
   D -> moveVertically n
 
+-- performInst2 :: Inst -> BridgeState [Pos] -> BridgeState [Pos]
+-- performInst2 inst s = BridgeState { headPos = h', tailPos = ts', visited = v' }
+--   where 
+--     ((h':ts'), v') = foldl f (headPos s, [], visited s) (tailPos s)
+--     f (acc, v) p = 
+
 main :: IO ()
 main = do
   lines <- lines <$> readFile "resources/input.txt"
   let insts = mapMaybe parseInst lines
-      finalState = foldl (flip performInst) initialState1 insts
+      finalState = foldl (flip performInst1) initialState1 insts
   putStrLn $ "Part 1: " ++ show (S.size (visited finalState))
