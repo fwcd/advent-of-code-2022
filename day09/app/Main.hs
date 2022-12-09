@@ -79,20 +79,20 @@ moveHorizontally' n h@(Pos h1 h2) t@(Pos t1 t2) = (h', t', dv)
                 where v' | h1 == t1  = range t t'
                          | otherwise = range (Pos h1 (t2 + signum n)) t'
 
-moveHorizontally :: Int -> BridgeState Pos -> BridgeState Pos
-moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = insertAll dv $ visited s }
-  where (h', t', dv) = moveHorizontally' n (headPos s) (tailPos s)
+moveVertically' :: Int -> Pos -> Pos -> (Pos, Pos, [Pos])
+moveVertically' n h t = (swap h', swap t', swap <$> dv)
+  where (h', t', dv) = moveHorizontally' n (swap h) (swap t)
 
-moveVertically :: Int -> BridgeState Pos -> BridgeState Pos
-moveVertically n s = BridgeState { headPos = swap h', tailPos = swap t', visited = insertAll (swap <$> dv) $ visited s }
-  where (h', t', dv) = moveHorizontally' n (swap (headPos s)) (swap (tailPos s))
+move :: Inst -> Pos -> Pos -> (Pos, Pos, [Pos])
+move (Inst d n) = case d of
+  L -> moveHorizontally' (-n)
+  R -> moveHorizontally' n
+  U -> moveVertically' (-n)
+  D -> moveVertically' n
 
 performInst1 :: Inst -> BridgeState Pos -> BridgeState Pos
-performInst1 (Inst d n) = case d of
-  L -> moveHorizontally (-n)
-  R -> moveHorizontally n
-  U -> moveVertically (-n)
-  D -> moveVertically n
+performInst1 inst s = BridgeState { headPos = h', tailPos = t', visited = insertAll dv $ visited s }
+  where (h', t', dv) = move inst (headPos s) (tailPos s)
 
 -- performInst2 :: Inst -> BridgeState [Pos] -> BridgeState [Pos]
 -- performInst2 inst s = BridgeState { headPos = h', tailPos = ts', visited = v' }
