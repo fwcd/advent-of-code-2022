@@ -3,6 +3,8 @@ module Main (main) where
 import qualified Data.Set as S
 import Data.Maybe (mapMaybe)
 
+import Debug.Trace
+
 data Pos = Pos Int Int
   deriving (Show, Eq, Ord)
 
@@ -91,16 +93,16 @@ moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
                          | otherwise = range (Pos (t1 + signum n) h2) t'
 
 performInst :: Inst -> BridgeState -> BridgeState
-performInst (Inst d n) = case d of
-  L -> moveHorizontally (-n)
-  R -> moveHorizontally n
-  U -> moveVertically (-n)
-  D -> moveVertically n
+performInst (Inst d n) s = trace (show d ++ show n ++ "\n" ++ pretty s' ++ "\n") s'
+  where s' = case d of
+          L -> moveHorizontally (-n) s
+          R -> moveHorizontally n s
+          U -> moveVertically (-n) s
+          D -> moveVertically n s
 
 main :: IO ()
 main = do
   lines <- lines <$> readFile "resources/demo.txt"
   let insts = mapMaybe parseInst lines
       finalState = foldl (flip performInst) initialState insts
-  print finalState
   putStrLn (pretty finalState)
