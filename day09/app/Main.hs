@@ -23,21 +23,28 @@ range (Pos i1 j1) (Pos i2 j2) | i1 == i2  = Pos i1 <$> [min j1 j2..max j1 j2]
 insertAll :: Ord a => [a] -> S.Set a -> S.Set a
 insertAll xs s = foldr S.insert s xs
 
-data BridgeState = BridgeState
-  { tailPos :: Pos
-  , headPos :: Pos
+data BridgeState a = BridgeState
+  { headPos :: Pos
+  , tailPos :: a
   , visited :: S.Set Pos
   }
   deriving (Show, Eq, Ord)
 
-initialState :: BridgeState
-initialState = BridgeState
+initialState1 :: BridgeState Pos
+initialState1 = BridgeState
   { headPos = Pos 0 0
   , tailPos = Pos 0 0
   , visited = S.fromList [Pos 0 0]
   }
 
-pretty :: BridgeState -> String
+initialState2 :: Int -> BridgeState [Pos]
+initialState2 len = BridgeState
+  { headPos = Pos 0 0
+  , tailPos = take len $ repeat $ Pos 0 0
+  , visited = S.fromList [Pos 0 0]
+  }
+
+pretty :: BridgeState Pos -> String
 pretty s = unlines $ [[format (Pos i j) | j <- [j1..j2]] | i <- [i1..i2]]
   where
     ps = (headPos s : tailPos s : S.toList (visited s))
@@ -58,7 +65,7 @@ parseInst :: String -> Maybe Inst
 parseInst (d:' ':c) = Just $ Inst (read [d]) (read c)
 parseInst _ = Nothing
 
-moveHorizontally :: Int -> BridgeState -> BridgeState
+moveHorizontally :: Int -> BridgeState Pos -> BridgeState Pos
 moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
   where
     h@(Pos h1 h2) = headPos s
@@ -75,7 +82,7 @@ moveHorizontally n s = BridgeState { headPos = h', tailPos = t', visited = v' }
 
 -- TODO: Implement moveVertically in terms of moveHorizontally with parameter swapping
 
-moveVertically :: Int -> BridgeState -> BridgeState
+moveVertically :: Int -> BridgeState Pos -> BridgeState Pos
 moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
   where
     h@(Pos h1 h2) = headPos s
@@ -90,7 +97,7 @@ moveVertically n s = BridgeState { headPos = h', tailPos = t', visited = v' }
                 where v' | h2 == t2  = range t t'
                          | otherwise = range (Pos (t1 + signum n) h2) t'
 
-performInst :: Inst -> BridgeState -> BridgeState
+performInst :: Inst -> BridgeState Pos -> BridgeState Pos
 performInst (Inst d n) = case d of
   L -> moveHorizontally (-n)
   R -> moveHorizontally n
@@ -101,5 +108,5 @@ main :: IO ()
 main = do
   lines <- lines <$> readFile "resources/input.txt"
   let insts = mapMaybe parseInst lines
-      finalState = foldl (flip performInst) initialState insts
+      finalState = foldl (flip performInst) initialState1 insts
   putStrLn $ "Part 1: " ++ show (S.size (visited finalState))
