@@ -1,4 +1,6 @@
 module Main (main) where
 
 main :: IO ()
-main = putStrLn "Hello world!"
+main = do
+  lines <- lines <$> readFile "resources/demo.txt"
+  mapM_ putStrLn lines
