@@ -35,5 +35,9 @@
   {
     "lang": "haskell",
     "path": "day09/app/Main.hs"
+  },
+  {
+    "lang": "clike",
+    "path": "day10/src/day10.c"
   }
 ]

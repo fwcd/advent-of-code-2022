@@ -14,7 +14,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 07: Perl
 - [x] Day 08: Scala
 - [x] Day 09: Haskell
-- [ ] Day 10
+- [ ] Day 10: C
 - [ ] Day 11
 - [ ] Day 12
 - [ ] Day 13
