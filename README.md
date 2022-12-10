@@ -13,7 +13,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 06: CMake
 - [x] Day 07: Perl
 - [x] Day 08: Scala
-- [ ] Day 09: Haskell
+- [x] Day 09: Haskell
 - [ ] Day 10
 - [ ] Day 11
 - [ ] Day 12
