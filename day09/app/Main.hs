@@ -2,6 +2,8 @@ module Main (main) where
 
 import qualified Data.Set as S
 import Data.Maybe (mapMaybe)
+import Data.List (elemIndex)
+import Debug.Trace
 
 data Pos = Pos Int Int
   deriving (Show, Eq, Ord)
@@ -12,51 +14,38 @@ zipPos f (Pos i1 j1) (Pos i2 j2) = Pos (f i1 i2) (f j1 j2)
 norm :: Pos -> Int
 norm (Pos i j) = max (abs i) (abs j)
 
-swap :: Pos -> Pos
-swap (Pos i j) = Pos j i
-
 dist :: Pos -> Pos -> Int
 dist (Pos i1 j1) (Pos i2 j2) = norm $ Pos (i2 - i1) (j2 - j1)
-
-range :: Pos -> Pos -> [Pos]
-range (Pos i1 j1) (Pos i2 j2) | i1 == i2  = Pos i1 <$> [min j1 j2..max j1 j2]
-                              | j1 == j2  = flip Pos j1 <$> [min i1 i2..max i1 i2]
-                              | otherwise = error "Can only perform range on axis-aligned positions"
 
 insertAll :: Ord a => [a] -> S.Set a -> S.Set a
 insertAll xs s = foldr S.insert s xs
 
-data BridgeState a = BridgeState
-  { headPos :: Pos
-  , tailPos :: a
-  , visited :: S.Set Pos
+data BridgeState = BridgeState
+  { headKnot  :: Pos
+  , tailKnots :: [Pos]
+  , visited   :: S.Set Pos
   }
   deriving (Show, Eq, Ord)
 
-initialState1 :: BridgeState Pos
-initialState1 = BridgeState
-  { headPos = Pos 0 0
-  , tailPos = Pos 0 0
-  , visited = S.fromList [Pos 0 0]
+initialState :: Int -> BridgeState
+initialState n = BridgeState
+  { headKnot  = startPos
+  , tailKnots = replicate (n - 1) startPos
+  , visited   = S.fromList [startPos]
   }
+  where startPos = Pos 0 0
 
-initialState2 :: Int -> BridgeState [Pos]
-initialState2 len = BridgeState
-  { headPos = Pos 0 0
-  , tailPos = take len $ repeat $ Pos 0 0
-  , visited = S.fromList [Pos 0 0]
-  }
-
-pretty :: BridgeState Pos -> String
+pretty :: BridgeState -> String
 pretty s = unlines $ [[format (Pos i j) | j <- [j1..j2]] | i <- [i1..i2]]
   where
-    ps = (headPos s : tailPos s : S.toList (visited s))
+    ps = (headKnot s : (tailKnots s ++ S.toList (visited s)))
     Pos i1 j1 = foldr1 (zipPos min) ps
     Pos i2 j2 = foldr1 (zipPos max) ps
-    format p | p == headPos s         = 'H'
-             | p == tailPos s         = 'T'
-             | p `S.member` visited s = '#'
-             | otherwise              = '.'
+    format p = case elemIndex p (tailKnots s) of
+      Just i                           -> head $ show (i + 1)
+      Nothing | p == headKnot s        -> 'H'
+              | p `S.member` visited s -> '#'
+              | otherwise              -> '.'
 
 data Dir = L | R | U | D
   deriving (Read, Show, Eq, Ord)
@@ -79,31 +68,29 @@ moveTail :: Pos -> Pos -> Pos
 moveTail h@(Pos h1 h2) t@(Pos t1 t2) | dist h t <= 1 = t
                                      | otherwise     = Pos (t1 + signum (h1 - t1)) (t2 + signum (h2 - t2))
 
-move :: Dir -> Pos -> Pos -> (Pos, Pos)
-move d h t = (h', t')
-  where h' = moveHead d h
-        t' = moveTail h' t
+moveTails :: Pos -> [Pos] -> [Pos]
+moveTails h ts = case ts of
+  []      -> []
+  t : ts' -> t' : moveTails t' ts'
+    where t' = moveTail h t
 
-moveInst :: Inst -> Pos -> Pos -> (Pos, Pos, [Pos])
-moveInst (Inst d n) h t | n == 0    = (h, t, [t])
-                        | otherwise = let (h', t')        = move d h t
-                                          (h'', t'', dv') = moveInst (Inst d (n - 1)) h' t'
-                                      in (h'', t'', t' : dv')
+moveInst :: Inst -> Pos -> [Pos] -> (Pos, [Pos], [Pos])
+moveInst (Inst d n) h ts | n == 0    = (h, ts, [last ts])
+                         | otherwise = let h'  = moveHead d h
+                                           ts' = moveTails h' ts
+                                           (h'', ts'', dv) = moveInst (Inst d (n - 1)) h' ts'
+                                       in (h'', ts'', last ts' : dv)
 
-performInst1 :: Inst -> BridgeState Pos -> BridgeState Pos
-performInst1 inst s = s'
-  where (h', t', dv) = moveInst inst (headPos s) (tailPos s)
-        s' = BridgeState h' t' $ insertAll dv $ visited s
-
--- performInst2 :: Inst -> BridgeState [Pos] -> BridgeState [Pos]
--- performInst2 inst s = BridgeState { headPos = h', tailPos = ts', visited = v' }
---   where 
---     ((h':ts'), v') = foldl f (headPos s, [], visited s) (tailPos s)
---     f (acc, v) p = 
+performInst :: Inst -> BridgeState -> BridgeState
+performInst inst s = trace (pretty s') $ s'
+  where (h', ts', dv) = moveInst inst (headKnot s) (tailKnots s)
+        s' = BridgeState h' ts' $ insertAll dv $ visited s
 
 main :: IO ()
 main = do
-  lines <- lines <$> readFile "resources/demo-single.txt"
+  lines <- lines <$> readFile "resources/demo-larger.txt"
   let insts = mapMaybe parseInst lines
-      finalState = foldl (flip performInst1) initialState1 insts
-  putStrLn $ "Part 1: " ++ show (S.size (visited finalState))
+      finalState n = foldl (flip performInst) (initialState n) insts
+      solve n = S.size (visited (finalState n))
+  putStrLn $ "Part 1: " ++ show (solve 2)
+  putStrLn $ "Part 2: " ++ show (solve 10)
