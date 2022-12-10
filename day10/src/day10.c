@@ -12,6 +12,33 @@ struct Inst {
   int value;
 };
 
+struct State {
+  int x;
+  int cycle;
+  int score;
+};
+
+void perform_cycle(struct State *state) {
+  state->cycle += 1;
+  if ((state->cycle - 20) % 40 == 0) {
+    state->score += state->cycle * state->x;
+  }
+}
+
+void perform_inst(struct Inst inst, struct State *state) {
+  switch (inst.op) {
+  case NOOP:
+    perform_cycle(state);
+    break;
+  case ADDX:
+    for (int i = 0; i < 2; i++) {
+      perform_cycle(state);
+    }
+    state->x += inst.value;
+    break;
+  }
+}
+
 struct Inst parse_inst(const char *raw) {
   switch (raw[0]) {
   case 'n': return (struct Inst) { .op = NOOP, .value = 0 };
@@ -22,14 +49,16 @@ struct Inst parse_inst(const char *raw) {
 }
 
 int main(void) {
-  FILE *fp = fopen("resources/demo.txt", "r");
-
+  FILE *fp = fopen("resources/input.txt", "r");
   char buffer[BUFFER_SIZE];
+  struct State state = { .x = 1, .cycle = 0, .score = 0 };
+
   while (fgets(buffer, BUFFER_SIZE, fp)) {
     struct Inst inst = parse_inst(buffer);
-    printf("%d %d\n", inst.op, inst.value);
+    perform_inst(inst, &state);
   }
 
   fclose(fp);
+  printf("Part 1: %d\n", state.score);
   return 0;
 }
