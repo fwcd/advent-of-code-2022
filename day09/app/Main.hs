@@ -3,7 +3,6 @@ module Main (main) where
 import qualified Data.Set as S
 import Data.Maybe (mapMaybe)
 import Data.List (elemIndex)
-import Debug.Trace
 
 data Pos = Pos Int Int
   deriving (Show, Eq, Ord)
@@ -82,13 +81,13 @@ moveInst (Inst d n) h ts | n == 0    = (h, ts, [last ts])
                                        in (h'', ts'', last ts' : dv)
 
 performInst :: Inst -> BridgeState -> BridgeState
-performInst inst s = trace (pretty s') $ s'
+performInst inst s = s'
   where (h', ts', dv) = moveInst inst (headKnot s) (tailKnots s)
         s' = BridgeState h' ts' $ insertAll dv $ visited s
 
 main :: IO ()
 main = do
-  lines <- lines <$> readFile "resources/demo-larger.txt"
+  lines <- lines <$> readFile "resources/input.txt"
   let insts = mapMaybe parseInst lines
       finalState n = foldl (flip performInst) (initialState n) insts
       solve n = S.size (visited (finalState n))
