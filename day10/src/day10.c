@@ -2,6 +2,7 @@
 #include <stdlib.h>
 
 #define BUFFER_SIZE 255
+#define CRT_WIDTH 40
 
 enum Op {
   NOOP, ADDX
@@ -16,12 +17,23 @@ struct State {
   int x;
   int cycle;
   int score;
+  int col;
 };
 
 void perform_cycle(struct State *state) {
   state->cycle += 1;
   if ((state->cycle - 20) % 40 == 0) {
     state->score += state->cycle * state->x;
+  }
+  if (abs(state->x - state->col) <= 1) {
+    printf("#");
+  } else {
+    printf(" ");
+  }
+  state->col++;
+  if (state->col >= CRT_WIDTH) {
+    state->col = 0;
+    printf("\n");
   }
 }
 
@@ -51,7 +63,7 @@ struct Inst parse_inst(const char *raw) {
 int main(void) {
   FILE *fp = fopen("resources/input.txt", "r");
   char buffer[BUFFER_SIZE];
-  struct State state = { .x = 1, .cycle = 0, .score = 0 };
+  struct State state = { .x = 1, .cycle = 0, .score = 0, .col = 0 };
 
   while (fgets(buffer, BUFFER_SIZE, fp)) {
     struct Inst inst = parse_inst(buffer);
