@@ -39,5 +39,9 @@
   {
     "lang": "clike",
     "path": "day10/src/day10.c"
+  },
+  {
+    "lang": "elixir",
+    "path": "day11/lib/day11.ex"
   }
 ]

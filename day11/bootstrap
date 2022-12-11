@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing Elixir via Homebrew..."
+    brew install elixir
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing Elixir via APT..."
+      sudo apt-get install -y elixir
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
