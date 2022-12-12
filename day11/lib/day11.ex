@@ -36,7 +36,7 @@ defmodule Day11 do
     monkey[:items]
       |> Enum.reverse
       |> List.foldl(state, fn item, state ->
-        new = div(monkey[:op].(item), 3)
+        new = monkey[:op].(item) |> div(state[:worry_divisor])
         j = if rem(new, monkey[:test_divisor]) == 0 do monkey[:if_true] else monkey[:if_false] end
         state
           |> Map.update!(:monkeys, fn monkeys -> monkeys |> List.update_at(j, &(Map.put(&1, :items, [new | &1[:items]]))) end)
@@ -61,22 +61,27 @@ defmodule Day11 do
     end
   end
 
+  def solve(monkeys, worry_divisor, rounds) do
+    state = %{
+      monkeys: monkeys,
+      inspects: List.duplicate(0, length(monkeys)),
+      worry_divisor: worry_divisor
+    }
+
+    inspects = state
+      |> simulate(rounds)
+      |> Map.get(:inspects)
+      |> Enum.sort(&(&1 >= &2))
+
+    part1 = Enum.at(inspects, 0) * Enum.at(inspects, 1)
+  end
+
   def main do
     monkeys = File.read!("resources/input.txt")
       |> String.split("\n\n")
       |> Enum.map(&parse_monkey/1)
 
-    state = %{
-      monkeys: monkeys,
-      inspects: List.duplicate(0, length(monkeys))
-    }
-    
-    inspects = state
-      |> simulate(20)
-      |> Map.get(:inspects)
-      |> Enum.sort(&(&1 >= &2))
-    
-    part1 = Enum.at(inspects, 0) * Enum.at(inspects, 1)
+    part1 = monkeys |> solve(3, 20)
     IO.puts "Part 1: #{part1}"
   end
 end
