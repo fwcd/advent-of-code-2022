@@ -23,3 +23,6 @@ case $(uname -s) in
     exit 1
     ;;
 esac
+
+echo "==> Using the following Java version"
+java --version
