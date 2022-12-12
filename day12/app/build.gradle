@@ -21,6 +21,11 @@ application {
     mainClass = 'dev.fwcd.aoc2022.day12.App'
 }
 
+java {
+    sourceCompatibility = '17'
+    targetCompatibility = '17'
+}
+
 tasks.withType(JavaCompile) {
     options.release = 17
 }
