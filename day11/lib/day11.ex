@@ -81,7 +81,7 @@ defmodule Day11 do
       |> Map.get(:inspects)
       |> Enum.sort(&(&1 >= &2))
 
-    part1 = Enum.at(inspects, 0) * Enum.at(inspects, 1)
+    Enum.at(inspects, 0) * Enum.at(inspects, 1)
   end
 
   def main do
