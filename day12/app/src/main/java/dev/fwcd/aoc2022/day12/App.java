@@ -52,11 +52,15 @@ public class App {
         return c - 'a';
     }
 
-    private static Pos locate(List<String> map, char c) {
+    private static Stream<Pos> allPositions(List<String> map) {
         return IntStream.range(0, map.size())
             .boxed()
             .flatMap(y -> IntStream.range(0, map.get(y).length())
-                .mapToObj(x -> new Pos(x, y)))
+                .mapToObj(x -> new Pos(x, y)));
+    }
+
+    private static Pos locate(List<String> map, char c) {
+        return allPositions(map)
             .filter(p -> map.get(p.y).charAt(p.x) == c)
             .findAny()
             .orElseThrow();
@@ -82,7 +86,7 @@ public class App {
             }
         }
 
-        throw new RuntimeException("No end found");
+        return Integer.MAX_VALUE;
     }
 
     public static void main(String[] args) throws IOException {
@@ -96,8 +100,15 @@ public class App {
 
         Pos start = locate(map, 'S');
         Pos end = locate(map, 'E');
-        int part1 = dijkstra(map, start, end);
 
+        int part1 = dijkstra(map, start, end);
         System.out.println("Part 1: " + part1);
+
+        int part2 = allPositions(map)
+            .filter(p -> height(map, p) == 0)
+            .mapToInt(p -> dijkstra(map, p, end))
+            .min()
+            .orElseThrow();
+        System.out.println("Part 2: " + part2);
     }
 }
