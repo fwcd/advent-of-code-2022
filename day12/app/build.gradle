@@ -21,6 +21,6 @@ application {
     mainClass = 'dev.fwcd.aoc2022.day12.App'
 }
 
-tasks.withType(JavaCompile).each {
-    it.options.compilerArgs.add('--enable-preview')
+tasks.withType(JavaCompile) {
+    options.release = 17
 }
