@@ -3,4 +3,4 @@
 set -e
 cd "$(dirname $0)"
 
-./gradlew run --stacktrace --debug
+./gradlew run

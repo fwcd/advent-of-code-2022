@@ -1,0 +1,10 @@
+#!/bin/bash
+
+case $(uname -s) in
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo JAVA_HOME=/usr/lib/jvm/java-17-openjdk-amd64
+    fi
+    ;;
+esac
