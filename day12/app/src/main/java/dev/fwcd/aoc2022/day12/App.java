@@ -69,15 +69,17 @@ public class App {
 
         while (!pq.isEmpty()) {
             Node node = pq.remove();
-            visited.add(node.pos);
-            if (node.pos.equals(end)) {
-                return node.steps;
+            if (!visited.contains(node.pos)) {
+                visited.add(node.pos);
+                if (node.pos.equals(end)) {
+                    return node.steps;
+                }
+                node.pos.getNeighbors()
+                    .filter(p -> p.isInBounds(map.get(0).length(), map.size()))
+                    .map(p -> new Node(p, node.weight + 1 + height(map, p) - height(map, node.pos), node.steps + 1))
+                    .filter(n -> (n.weight - node.weight) <= 2)
+                    .forEach(pq::add);
             }
-            node.pos.getNeighbors()
-                .filter(p -> !visited.contains(p) && p.isInBounds(map.get(0).length(), map.size()))
-                .map(p -> new Node(p, node.weight + height(map, p) - height(map, node.pos), node.steps + 1))
-                .filter(n -> (n.weight - node.weight) <= 1)
-                .forEach(pq::add);
         }
 
         throw new RuntimeException("No end found");
