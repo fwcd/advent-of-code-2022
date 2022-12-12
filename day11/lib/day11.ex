@@ -31,44 +31,49 @@ defmodule Day11 do
       end)
   end
 
-  def step(i, monkeys) do
-    monkey = monkeys |> Enum.at(i)
+  def step(i, state) do
+    monkey = state[:monkeys] |> Enum.at(i)
     monkey[:items]
       |> Enum.reverse
-      |> List.foldl(monkeys, fn item, monkeys ->
+      |> List.foldl(state, fn item, state ->
         new = div(monkey[:op].(item), 3)
         j = if rem(new, monkey[:test_divisor]) == 0 do monkey[:if_true] else monkey[:if_false] end
-        monkeys
-          |> List.update_at(j, &(Map.put(&1, :items, [new | &1[:items]])))
+        state
+          |> Map.update!(:monkeys, fn monkeys -> monkeys |> List.update_at(j, &(Map.put(&1, :items, [new | &1[:items]]))) end)
       end)
-      |> List.replace_at(i, Map.put(monkey, :items, []))
+      |> Map.update!(:inspects, fn inspects -> inspects |> List.update_at(i, &(&1 + length(monkey[:items]))) end)
+      |> Map.update!(:monkeys, &(List.replace_at(&1, i, Map.put(monkey, :items, []))))
   end
 
-  def simulate_round(monkeys) do
-    (0..(length(monkeys) - 1))
+  def simulate_round(state) do
+    (0..(length(state[:monkeys]) - 1))
       |> Enum.to_list
-      |> List.foldl(monkeys, &step/2)
+      |> List.foldl(state, &step/2)
   end
 
-  def simulate(monkeys, rounds, inspects \\ nil) do
+  def simulate(state, rounds) do
     if rounds > 0 do
-      monkeys = simulate_round(monkeys)
-      monkeys |> Enum.map(&(&1[:items])) |> IO.inspect(charlists: :as_lists)
-      inspects = Enum.zip(monkeys, inspects || List.duplicate(0, length(monkeys)))
-        |> Enum.map(fn {monkey, n} -> n + length(monkey[:items]) end)
-      monkeys |> simulate(rounds - 1, inspects)
+      state
+        |> simulate_round
+        |> simulate(rounds - 1)
     else
-      inspects
+      state
     end
   end
 
   def main do
-    monkeys = File.read!("resources/demo.txt")
+    monkeys = File.read!("resources/input.txt")
       |> String.split("\n\n")
       |> Enum.map(&parse_monkey/1)
+
+    state = %{
+      monkeys: monkeys,
+      inspects: List.duplicate(0, length(monkeys))
+    }
     
-    inspects = monkeys
+    inspects = state
       |> simulate(20)
+      |> Map.get(:inspects)
       |> Enum.sort(&(&1 >= &2))
     
     part1 = Enum.at(inspects, 0) * Enum.at(inspects, 1)
