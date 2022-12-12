@@ -43,5 +43,9 @@
   {
     "lang": "elixir",
     "path": "day11/lib/day11.ex"
+  },
+  {
+    "lang": "java",
+    "path": "day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java"
   }
 ]

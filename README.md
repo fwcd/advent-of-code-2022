@@ -16,7 +16,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 09: Haskell
 - [x] Day 10: C
 - [x] Day 11: Elixir
-- [ ] Day 12
+- [ ] Day 12: Java
 - [ ] Day 13
 - [ ] Day 14
 - [ ] Day 15
