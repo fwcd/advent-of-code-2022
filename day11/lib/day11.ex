@@ -39,9 +39,12 @@ defmodule Day11 do
         new = monkey[:op].(item) |> div(state[:worry_divisor]) |> rem(state[:worry_mod])
         j = if rem(new, monkey[:test_divisor]) == 0 do monkey[:if_true] else monkey[:if_false] end
         state
-          |> Map.update!(:monkeys, fn monkeys -> monkeys |> List.update_at(j, fn other ->
-            other |> Map.update!(:items, &([new | &1]))
-          end) end)
+          |> Map.update!(:monkeys, fn monkeys ->
+            monkeys
+              |> List.update_at(j, fn other ->
+                other |> Map.update!(:items, &([new | &1]))
+              end)
+          end)
       end)
       |> Map.update!(:inspects, fn inspects -> inspects |> List.update_at(i, &(&1 + length(monkey[:items]))) end)
       |> Map.update!(:monkeys, &(List.replace_at(&1, i, Map.put(monkey, :items, []))))
@@ -68,6 +71,8 @@ defmodule Day11 do
       monkeys: monkeys,
       inspects: List.duplicate(0, length(monkeys)),
       worry_divisor: worry_divisor,
+      # The trick to part 2 is that divisibility by any of the test_divisors
+      # is unaffected by taking the worry levels mod the product of all test_divisors.
       worry_mod: monkeys |> Enum.map(&(&1[:test_divisor])) |> Enum.product
     }
 
