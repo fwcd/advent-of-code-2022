@@ -11,3 +11,6 @@ esac
 
 echo "==> Using the following Java version"
 java --version
+
+echo "==> Using the following Gradle version"
+./gradlew --version
