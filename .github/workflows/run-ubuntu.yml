@@ -17,6 +17,9 @@ jobs:
     - name: Bootstrap
       run: ./bootstrap
       working-directory: 'day${{ matrix.day }}'
+    - name: Setup Env (if needed)
+      run: '[ -f ./setup-env ] && . ./setup-env'
+      working-directory: 'day${{ matrix.day }}'
     - name: Run
       run: ./run
       working-directory: 'day${{ matrix.day }}'
