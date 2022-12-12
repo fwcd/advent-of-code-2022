@@ -20,9 +20,3 @@ application {
     // Define the main class for the application.
     mainClass = 'dev.fwcd.aoc2022.day12.App'
 }
-
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(17))
-    }
-}
