@@ -47,5 +47,9 @@
   {
     "lang": "java",
     "path": "day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java"
+  },
+  {
+    "lang": "javascript",
+    "path": "day13/src/day13.js"
   }
 ]
