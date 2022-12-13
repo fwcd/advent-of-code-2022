@@ -23,12 +23,15 @@ function compare(a, b) {
   }
 }
 
+function parsePackets(raw) {
+  return raw.split('\n')
+    .filter(line => line.trim())
+    .flatMap(line => line ? [JSON.parse(line)] : []);
+}
+
 (async () => {
   const input = await fs.readFile('resources/input.txt', { encoding: 'utf8' });
-  const pairs = input.split('\n\n')
-    .map(rawPair => rawPair.split('\n')
-      .filter(line => line.trim())
-      .flatMap(line => line ? [JSON.parse(line)] : []));
+  const pairs = input.split('\n\n').map(parsePackets);
   
   const part1 = pairs
     .flatMap(([l, r], i) => compare(l, r) <= 0 ? [i + 1] : [])
@@ -37,11 +40,8 @@ function compare(a, b) {
   console.log(`Part 1: ${part1}`);
 
   const dividers = [[[2]], [[6]]];
-  const withDividers = [
-    ...input.split('\n').filter(line => line.trim()).map(JSON.parse),
-    ...dividers,
-  ];
-  const sorted = withDividers.sort(compare);
+  const all = parsePackets(input);
+  const sorted = [...all, ...dividers].sort(compare);
   const part2 = dividers
     .map(d => sorted.map(JSON.stringify).indexOf(JSON.stringify(d)) + 1)
     .reduce((x, y) => x * y);
