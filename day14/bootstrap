@@ -1,0 +1,38 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing Opam via Homebrew..."
+    brew install opam
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing Opam via APT..."
+      sudo apt-get install -y opam
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
+
+echo "==> Setting up OCaml..."
+
+opam init -y
+eval $(opam env)
+
+if [ ! -d _opam ]; then
+  opam switch create .
+  eval $(opam env)
+fi
+
+echo "==> Installing Dune..."
+opam install dune

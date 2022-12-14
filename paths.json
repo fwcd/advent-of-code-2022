@@ -51,5 +51,9 @@
   {
     "lang": "javascript",
     "path": "day13/src/day13.js"
+  },
+  {
+    "lang": "ocaml",
+    "path": "day14/bin/main.ml"
   }
 ]

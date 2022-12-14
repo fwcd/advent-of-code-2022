@@ -1,0 +1,24 @@
+(lang dune 3.6)
+
+(name day14)
+
+(generate_opam_files true)
+
+(source
+ (github fwcd/advent-of-code-2022))
+
+(authors "fwcd")
+
+(maintainers "fwcd")
+
+(license LICENSE)
+
+(package
+ (name day14)
+ (synopsis "Day 14 solution")
+ (description "Day 14 solution as part of the Advent of Code 2022 challenge")
+ (depends ocaml dune)
+ (tags
+  (topics advent-of-code)))
+
+; See the complete stanza docs at https://dune.readthedocs.io/en/stable/dune-files.html#dune-project
