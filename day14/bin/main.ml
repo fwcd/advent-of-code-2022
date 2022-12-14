@@ -131,7 +131,7 @@ let read_lines (filename: string): string list =
   ;;
 
 let () =
-  let lines = read_lines "resources/demo.txt" in
+  let lines = read_lines "resources/input.txt" in
   let spawn_pos = { x = 500; y = 0 } in
   let initial = { cave = parse_cave lines spawn_pos; spawn_pos = spawn_pos; landed_sand = 0; reached_void = false } in
   let final = simulate initial in
