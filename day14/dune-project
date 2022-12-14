@@ -11,8 +11,6 @@
 
 (maintainers "fwcd")
 
-(license LICENSE)
-
 (package
  (name day14)
  (synopsis "Day 14 solution")

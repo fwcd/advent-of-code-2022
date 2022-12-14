@@ -4,7 +4,6 @@ synopsis: "Day 14 solution"
 description: "Day 14 solution as part of the Advent of Code 2022 challenge"
 maintainer: ["fwcd"]
 authors: ["fwcd"]
-license: "LICENSE"
 tags: ["topics" "advent-of-code"]
 homepage: "https://github.com/fwcd/advent-of-code-2022"
 bug-reports: "https://github.com/fwcd/advent-of-code-2022/issues"

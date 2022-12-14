@@ -28,5 +28,5 @@ echo "==> Setting up OCaml..."
 opam init -y
 eval $(opam env)
 
-echo "==> Installing Dune..."
-opam install dune
+echo "==> Installing dependencies..."
+opam install . --deps-only
