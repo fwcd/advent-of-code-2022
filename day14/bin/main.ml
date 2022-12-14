@@ -1,7 +1,3 @@
-[@@@warnerror "-unused-field"]
-[@@@warnerror "-unused-type-declaration"]
-[@@@warnerror "-unused-var-strict"]
-
 type pos = { x: int; y: int }
 type field = Rock | Sand | Space
 type cave = { map: field array; width: int; height: int; top_left: pos }
