@@ -25,7 +25,6 @@ case $(uname -s) in
 esac
 
 echo "==> Setting up OCaml..."
-
 opam init -y
 eval $(opam env)
 
