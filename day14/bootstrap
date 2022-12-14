@@ -29,4 +29,4 @@ opam init -y
 eval $(opam env)
 
 echo "==> Installing dependencies..."
-opam install . --deps-only
+opam install -y . --deps-only
