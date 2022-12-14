@@ -29,10 +29,5 @@ echo "==> Setting up OCaml..."
 opam init -y
 eval $(opam env)
 
-if [ ! -d _opam ]; then
-  opam switch create .
-  eval $(opam env)
-fi
-
 echo "==> Installing Dune..."
 opam install dune
