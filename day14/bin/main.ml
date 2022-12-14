@@ -134,7 +134,7 @@ let read_lines (filename: string): string list =
   ;;
 
 let () =
-  let lines = read_lines "resources/demo.txt" in
+  let lines = read_lines "resources/input.txt" in
   let paths = parse_paths lines in
   let spawn_pos = { x = 500; y = 0 } in
   let state cave = { cave = cave spawn_pos; spawn_pos = spawn_pos; landed_sand = 0; reached_end = false } in
@@ -147,6 +147,5 @@ let () =
   let ground_y = final1.cave.top_left.y + height + 1 in
   let floor = [{ x = spawn_pos.x - height - 1; y = ground_y }; { x = spawn_pos.x + height + 1; y = ground_y }] in
   let final2 = simulate (state (fun spawn_pos -> parse_cave (floor :: paths) [spawn_pos])) in
-  Printf.printf "Cave 2: \n%s\n" (pretty_cave final2.cave);
   Printf.printf "Part 2: %d\n" final2.landed_sand
   ;;
