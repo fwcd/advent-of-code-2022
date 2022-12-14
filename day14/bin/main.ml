@@ -5,7 +5,7 @@
 type pos = { x: int; y: int }
 type field = Rock | Sand | Space
 type cave = { map: field array; width: int; height: int; top_left: pos }
-type state = { cave: cave; spawn_pos: pos; landed_sand: int; reached_void: bool }
+type state = { cave: cave; spawn_pos: pos; landed_sand: int; reached_end: bool }
 
 let (<<) f g x = f (g x);;
 let flip f y x = f x y;;
@@ -85,9 +85,10 @@ let draw_path (path: pos list) (cave: cave) =
   List.fold_right draw_line (List.combine (drop_last path) (List.tl path)) cave
   ;;
 
-let parse_cave (lines: string list) (spawn_pos: pos): cave =
-  let paths: pos list list = List.map parse_line lines in
-  let poss: pos list = spawn_pos :: List.flatten paths in
+let parse_paths (lines: string list): pos list list = List.map parse_line lines;;
+
+let parse_cave (paths: pos list list) (extra_poss: pos list): cave =
+  let poss: pos list = extra_poss @ List.flatten paths in
   let top_left = List.fold_right (zip_pos min) poss { x = max_int; y = max_int } in
   let bottom_right = List.fold_right (zip_pos max) poss { x = min_int; y = min_int } in
   let size = zip_pos (+) (zip_pos (-) bottom_right top_left) { x = 1; y = 1 } in
@@ -99,22 +100,24 @@ let is_free (pos: pos) (cave: cave): bool = get pos cave == Space;;
 
 let fall (dx: int) (pos: pos): pos = { x = pos.x + dx; y = pos.y + 1 };;
 
-let rec pour_sand (pos: pos) (state: state): state =
+type pour_loc = AtRoot | Airborne
+
+let rec pour_sand (loc: pour_loc) (pos: pos) (state: state): state =
   let below = List.map (flip fall pos) [0; -1; 1] in
   if any (not << flip in_bounds state.cave) below then
-    { state with reached_void = true }
+    { state with reached_end = true } (* Reached void *)
   else
     let free = List.filter (flip is_free state.cave) below in
     match free with
-      | []     -> { state with cave = place Sand pos state.cave; landed_sand = state.landed_sand + 1 }
-      | f :: _ -> pour_sand f state
+      | []                    -> { state with cave = place Sand pos state.cave; landed_sand = state.landed_sand + 1; reached_end = loc == AtRoot }
+      | f :: _                -> pour_sand Airborne f state
   ;;
 
 let rec simulate (state: state): state =
-  if state.reached_void then
+  if state.reached_end then
     state
   else
-    simulate (pour_sand state.spawn_pos state)
+    simulate (pour_sand AtRoot state.spawn_pos state)
   ;;
 
 let read_lines (filename: string): string list =
@@ -131,10 +134,19 @@ let read_lines (filename: string): string list =
   ;;
 
 let () =
-  let lines = read_lines "resources/input.txt" in
+  let lines = read_lines "resources/demo.txt" in
+  let paths = parse_paths lines in
   let spawn_pos = { x = 500; y = 0 } in
-  let initial = { cave = parse_cave lines spawn_pos; spawn_pos = spawn_pos; landed_sand = 0; reached_void = false } in
-  let final = simulate initial in
-  Printf.printf "Cave: \n%s\n" (pretty_cave final.cave);
-  Printf.printf "Part 1: %d\n" final.landed_sand
+  let state cave = { cave = cave spawn_pos; spawn_pos = spawn_pos; landed_sand = 0; reached_end = false } in
+
+  let final1 = simulate (state (fun spawn_pos -> parse_cave paths [spawn_pos])) in
+  Printf.printf "Cave 1: \n%s\n" (pretty_cave final1.cave);
+  Printf.printf "Part 1: %d\n" final1.landed_sand;
+
+  let height = final1.cave.height in
+  let ground_y = final1.cave.top_left.y + height + 1 in
+  let floor = [{ x = spawn_pos.x - height - 1; y = ground_y }; { x = spawn_pos.x + height + 1; y = ground_y }] in
+  let final2 = simulate (state (fun spawn_pos -> parse_cave (floor :: paths) [spawn_pos])) in
+  Printf.printf "Cave 2: \n%s\n" (pretty_cave final2.cave);
+  Printf.printf "Part 2: %d\n" final2.landed_sand
   ;;
