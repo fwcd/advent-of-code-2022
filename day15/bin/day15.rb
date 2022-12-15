@@ -13,9 +13,9 @@ def solve(y, sensors)
   sensors
     .map { |s, b| [s, b, manhattan(s, b) - (s[1] - y).abs] }
     .filter { |s, b, d| d > 0 }
-    .flat_map { |s, b, d| ((s[0] - d)..(s[0] + d)).map { |x| [x, y] } }
+    .flat_map { |s, b, d| ((s[0] - d)..(s[0] + d)).to_a }
     .to_set
-    .filter { |p| !beacons.include?(p) }
+    .filter { |x| !beacons.include?([x, y]) }
     .length
 end
 
