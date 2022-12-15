@@ -6,6 +6,10 @@ def manhattan(p, q)
   (p[0] - q[0]).abs + (p[1] - q[1]).abs
 end
 
+def tuning_frequency(p)
+  p[0] * 4000000 + p[1]
+end
+
 class Range
   def overlaps?(other)
     other.include?(self.min) || other.include?(self.max) || self.include?(other.min) || self.include?(other.max)
@@ -36,6 +40,20 @@ def invalid_position_count(y, sensors)
     .sum - beacons
 end
 
+def valid_positions(y, sensors)
+  if y % 1_000_000 == 0 then
+    puts y
+  end
+  rs = scan(y, sensors)
+  rs[...-1].zip(rs[1..])
+    .filter { |l, r| r.min[0] - l.max[0] == 2 }
+    .map { |l, r| [l.max[0] + 1, y] }
+end
+
+def valid_positions_in(ys, sensors)
+  ys.flat_map { |y| valid_positions(y, sensors) }
+end
+
 sensors = File.readlines('resources/input.txt')
   .map { |line|
     sx, sy, bx, by = line.match(/Sensor at x=(-?\d+), y=(-?\d+): closest beacon is at x=(-?\d+), y=(-?\d+)/)
@@ -45,3 +63,4 @@ sensors = File.readlines('resources/input.txt')
   }
 
 puts "Part 1: #{invalid_position_count(2_000_000, sensors)}"
+puts "Part 2: #{valid_positions_in(0..4_000_000, sensors)}"
