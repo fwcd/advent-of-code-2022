@@ -8,7 +8,7 @@ end
 
 class Range
   def overlaps?(other)
-    other.include?(self.min) || other.include?(self.max)
+    other.include?(self.min) || other.include?(self.max) || self.include?(other.min) || self.include?(other.max)
   end
 
   def merge(other)
@@ -20,8 +20,8 @@ def scan(y, sensors)
   sensors
     .map { |s, b| [s, b, manhattan(s, b) - (s[1] - y).abs] }
     .filter { |s, b, d| d > 0 }
-    .sort_by { |s, b, d| s[0] }
     .map { |s, b, d| ((s[0] - d)..(s[0] + d)) }
+    .sort_by { |r| r.min }
     .reduce([]) { |rs, r2| if rs.last&.overlaps?(r2) then [*rs[0...-1], rs.last.merge(r2)] else [*rs, r2] end }
 end
 
