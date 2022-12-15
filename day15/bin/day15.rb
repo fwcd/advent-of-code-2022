@@ -42,12 +42,12 @@ end
 
 def valid_positions(y, sensors)
   if y % 1_000_000 == 0 then
-    puts y
+    puts "Searching y = #{y}..."
   end
   rs = scan(y, sensors)
   rs[...-1].zip(rs[1..])
-    .filter { |l, r| r.min[0] - l.max[0] == 2 }
-    .map { |l, r| [l.max[0] + 1, y] }
+    .filter { |l, r| r.min - l.max == 2 }
+    .map { |l, r| [l.max + 1, y] }
 end
 
 def valid_positions_in(ys, sensors)
@@ -63,4 +63,4 @@ sensors = File.readlines('resources/input.txt')
   }
 
 puts "Part 1: #{invalid_position_count(2_000_000, sensors)}"
-puts "Part 2: #{valid_positions_in(0..4_000_000, sensors)}"
+puts "Part 2: #{tuning_frequency(valid_positions_in(0..4_000_000, sensors).last)}"
