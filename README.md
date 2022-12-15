@@ -19,7 +19,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 12: Java
 - [x] Day 13: JavaScript
 - [x] Day 14: OCaml
-- [ ] Day 15
+- [ ] Day 15: Ruby
 - [ ] Day 16
 - [ ] Day 17
 - [ ] Day 18

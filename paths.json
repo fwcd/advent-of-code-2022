@@ -55,5 +55,9 @@
   {
     "lang": "ocaml",
     "path": "day14/bin/main.ml"
+  },
+  {
+    "lang": "ruby",
+    "path": "day15/day15.rb"
   }
 ]
