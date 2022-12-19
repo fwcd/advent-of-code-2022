@@ -40,7 +40,7 @@ class Point:
     def __str__(self):
         return ' '.join(map(str, self.values))
 
-def surface_area(points: set[Point]) -> int:
+def area(points: set[Point]) -> int:
     sides = {point: 6 for point in points}
 
     for point in points:
@@ -51,24 +51,28 @@ def surface_area(points: set[Point]) -> int:
 
     return sum(sides.values())
 
-def dfs(start: Point, boundary: set[Point]) -> set[Point]:
-    point = start
-    remaining = [start]
+def dfs_exterior_area(points: set[Point]) -> int:
+    raw_points = [point.values for point in points]
+    min_corner = Point(np.min(raw_points, axis=0) - np.array([1, 1, 1]))
+    max_corner = Point(np.max(raw_points, axis=0) + np.array([1, 1, 1]))
+
+    exterior_sides = 0
+
+    point = min_corner
+    remaining = [min_corner]
     visited = set()
 
     while remaining:
         point = remaining.pop()
-        if point not in visited and point not in boundary:
-            visited.add(point)
-            for neighbor in point.neighbors:
-                remaining.append(neighbor)
+        if (point.values >= min_corner.values).all() and (point.values <= max_corner.values).all():
+            if point in points:
+                exterior_sides += 1
+            elif point not in visited:
+                visited.add(point)
+                for neighbor in point.neighbors:
+                    remaining.append(neighbor)
     
-    return visited
-
-def fill(boundary: set[Point]) -> set[Point]:
-    center = Point(np.average([point.values for point in boundary], axis=0).astype(int))
-    interior = dfs(center, boundary)
-    return boundary.union(interior)
+    return exterior_sides
 
 def triangle_to_stl(points: list[Point], normal: np.ndarray) -> str:
     return '\n'.join([
@@ -126,15 +130,12 @@ def main():
     with open(RESOURCES_DIR / 'input.txt', 'r') as f:
         lines = f.readlines()
 
-    boundary = {Point(np.array([int(c) for c in line.strip().split(',')])) for line in lines if line.strip()}
-    filled = fill(boundary)
+    points = {Point(np.array([int(c) for c in line.strip().split(',')])) for line in lines if line.strip()}
 
-    print(f'{len(boundary)} vs {len(filled)}')
-    print(f'Part 1: {surface_area(boundary)}')
-    print(f'Part 2: {surface_area(filled)}')
+    print(f'Part 1: {area(points)}')
+    print(f'Part 2: {dfs_exterior_area(points)}')
     
-    export_stl('boundary', boundary)
-    export_stl('filled', filled)
+    export_stl('points', points)
 
 if __name__ == '__main__':
     main()
