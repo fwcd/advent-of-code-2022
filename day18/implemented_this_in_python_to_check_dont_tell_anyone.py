@@ -56,17 +56,16 @@ def dfs(start: Point, boundary: set[Point]) -> set[Point]:
 
     while remaining:
         point = remaining.pop()
-        for neighbor in point.neighbors:
-            if neighbor not in visited and neighbor not in boundary:
-                visited.add(neighbor)
-                remaining.append(point)
+        if point not in visited and point not in boundary:
+            visited.add(point)
+            for neighbor in point.neighbors:
+                remaining.append(neighbor)
     
     return visited
 
 def fill(boundary: set[Point]) -> set[Point]:
     center = Point(np.average([point.values for point in boundary], axis=0).astype(int))
     interior = dfs(center, boundary)
-    print(interior)
     return boundary.union(interior)
 
 def triangle_to_stl(points: list[Point], normal: np.ndarray) -> str:
