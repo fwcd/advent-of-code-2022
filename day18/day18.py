@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
 
+# A Python implementation to debug and verify.
+
 from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
