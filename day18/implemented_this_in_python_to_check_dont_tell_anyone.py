@@ -1,76 +1,64 @@
 #!/usr/bin/env python3
 
+from __future__ import annotations
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
+
+import numpy as np
 
 ROOT_PATH = Path(__file__).parent
 RESOURCES_DIR = ROOT_PATH / 'resources'
 POINTCLOUDS_DIR = ROOT_PATH / 'pointclouds'
 
-def surface_area(poss: list[list[int]]) -> int:
-    sides = {str(pos): 6 for pos in poss}
+AXES = 3
 
-    for pos in poss:
+@dataclass
+class Point:
+    values: np.ndarray
+
+    @property
+    def neighbors(self) -> Iterable[Point]:
         for d in [-1, 1]:
-            for axis, _ in enumerate(pos):
-                neighbor = list(pos)
+            for axis in range(len(self.values)):
+                neighbor = self.values.copy()
                 neighbor[axis] += d
-                if str(neighbor) in sides:
-                    sides[str(pos)] -= 1
-                    assert sides[str(pos)] >= 0
+                yield Point(neighbor)
+
+    def __eq__(self, other):
+        return (self.values == other.values).all()
+
+    def __hash__(self):
+        return hash(self.values.data.tobytes())
+    
+    def __str__(self):
+        return ' '.join(map(str, self.values))
+
+def surface_area(points: list[Point]) -> int:
+    sides = {point: 6 for point in points}
+
+    for point in points:
+        for neighbor in point.neighbors:
+            if neighbor in sides:
+                sides[neighbor] -= 1
+                assert sides[neighbor] >= 0
 
     return sum(sides.values())
 
-def ranges_along(axis: int, boundary: list[list[int]]) -> dict[str, tuple[int, int]]:
-    ranges = {}
-    others = {}
+def fill(boundary: list[Point]) -> list[Point]:
+    avg = Point(np.average([point.values for point in boundary]))
+    return boundary # TODO
 
-    for pos in boundary:
-        rest = pos[:axis] + pos[axis + 1:]
-        key = str(rest)
-        current = pos[axis]
-        other = others.get(key, None)
-        if other is None:
-            others[key] = current
-        else:
-            ranges[key] = (min(current, other), max(current, other))
-
-    return ranges
-
-def interiors_along(axis: int, boundary: list[list[int]]) -> set[str]:
-    ranges = ranges_along(axis, boundary)
-    boundary_set = {str(pos) for pos in boundary}
-    interiors = set()
-
-    for key, (min_v, max_v) in ranges.items():
-        rest = eval(key)
-        assert str(rest[:axis] + [min_v] + rest[axis:]) in boundary_set
-        assert str(rest[:axis] + [max_v] + rest[axis:]) in boundary_set
-        for v in range(min_v + 1, max_v):
-            pos = rest[:axis] + [v] + rest[axis:]
-            if str(pos) not in boundary_set:
-                interiors.add(str(pos))
-
-    return interiors
-
-def fill(boundary: list[list[int]]) -> list[list[int]]:
-    interior = interiors_along(0, boundary)
-
-    for axis in [1, 2]:
-        interior = interior.intersection(interiors_along(axis, boundary))
-
-    boundary_set = {str(pos) for pos in boundary}
-    return [eval(str_pos) for str_pos in boundary_set.union(interior)]
-
-def to_ply_pointcloud(poss: list[list[int]]) -> str:
+def to_ply_pointcloud(points: list[Point]) -> str:
     return '\n'.join([
         'ply',
         'format ascii 1.0',
-        f'element vertex {len(poss)}',
+        f'element vertex {len(points)}',
         'property float x',
         'property float y',
         'property float z',
         'end_header',
-        *[f' '.join(map(str, pos)) for pos in poss],
+        *[str(point) for point in points],
         '',
     ])
 
@@ -78,7 +66,7 @@ def main():
     with open(RESOURCES_DIR / 'input.txt', 'r') as f:
         lines = f.readlines()
 
-    boundary = [[int(c) for c in line.strip().split(',')] for line in lines if line.strip()]
+    boundary = [Point(np.array([int(c) for c in line.strip().split(',')])) for line in lines if line.strip()]
     filled = fill(boundary)
 
     print(f'{len(boundary)} vs {len(filled)}')
