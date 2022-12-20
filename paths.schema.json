@@ -4,7 +4,7 @@
   "description": "A manifest describing where the main sources for each day are located.",
   "type": "array",
   "items": {
-    "type": "object",
+    "type": ["object", "null"],
     "description": "A day/solution.",
     "properties": {
       "lang": {
@@ -173,8 +173,13 @@
           "utf16-le",
           "replacement"
         ]
+      },
+      "binary": {
+        "type": "boolean",
+        "description": "Whether the file is in a binary (i.e. non-text) format.",
+        "default": false
       }
     },
-    "required": ["lang", "path"]
+    "required": ["path"]
   }
 }
