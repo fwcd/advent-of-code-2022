@@ -61,8 +61,10 @@ def dfs_exterior_area(points: set[Point]) -> int:
     point = min_corner
     remaining = [min_corner]
     visited = set()
+    iterations = 0
 
     while remaining:
+        iterations += 1
         point = remaining.pop()
         if (point.values >= min_corner.values).all() and (point.values <= max_corner.values).all():
             if point in points:
@@ -72,6 +74,7 @@ def dfs_exterior_area(points: set[Point]) -> int:
                 for neighbor in point.neighbors:
                     remaining.append(neighbor)
     
+    print(f'DFS Iterations: {iterations} (visited {len(visited)})')
     return exterior_sides
 
 def triangle_to_stl(points: list[Point], normal: np.ndarray) -> str:

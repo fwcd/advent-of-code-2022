@@ -22,7 +22,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 15: Ruby
 - [ ] Day 16
 - [ ] Day 17
-- [ ] Day 18: Apple Shortcuts
+- [x] Day 18: Apple Shortcuts
 - [ ] Day 19
 - [ ] Day 20
 - [ ] Day 21
