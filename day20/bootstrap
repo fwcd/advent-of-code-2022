@@ -1,0 +1,3 @@
+#!/bin/bash
+
+# Do nothing, we assume Clang is installed.
