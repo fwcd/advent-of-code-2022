@@ -2,7 +2,7 @@ SRCDIR = src
 OUTDIR = out
 
 $(OUTDIR)/day20: $(SRCDIR)/day20.m | $(OUTDIR)
-	clang -framework Foundation -o $@ $<
+	clang -g -framework Foundation -o $@ $<
 
 $(OUTDIR):
 	mkdir -p $@
