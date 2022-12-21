@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        day: ['01']
+        day: ['01', '20']
 
     steps:
     - uses: actions/checkout@v3
