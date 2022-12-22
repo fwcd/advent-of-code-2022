@@ -35,7 +35,7 @@ NSMutableArray *permuted(NSMutableArray *array, NSArray<NSNumber *> * permutatio
   return result;
 }
 
-NSMutableArray<NSNumber *> *inverse(NSArray<NSNumber *> *permutation) {
+NSMutableArray<NSNumber *> *inverted(NSArray<NSNumber *> *permutation) {
   NSMutableArray<NSNumber *> *result = [NSMutableArray arrayWithArray:permutation];
   for (int i = 0; i < [permutation count]; i++) {
     result[[permutation[i] intValue]] = [NSNumber numberWithInt:i];
@@ -57,11 +57,7 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
     int endIndex = startIndex + move;
 
     // Deal with weird boundary wrapping
-    if (move < 0) {
-      endIndex = mod(endIndex, n - 1);
-    } else {
-      endIndex = mod(endIndex - 1, n - 1) + 1;
-    }
+    endIndex = mod(endIndex - 1, n - 1) + 1;
 
     int delta = endIndex - startIndex;
     int step = delta >= 0 ? 1 : -1;
@@ -69,27 +65,30 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
     // Capture permutation[newIndex], permutation[newIndex + 1], ..., permutation[newIndex + delta]
     // (with indices taken mod n) before rewriting the permutation in-place.
     NSMutableArray<NSNumber *> *previousPermutationWindow = [[NSMutableArray alloc] init];
+    // FIXME: Track inverse efficiently
+    NSArray *inverse = inverted(permutation);
     for (int i = 0; i <= abs(delta); i++) {
-      [previousPermutationWindow addObject:permutation[mod(startIndex + i * step, n)]];
+      [previousPermutationWindow addObject:inverse[mod(startIndex + i * step, n)]];
     }
 
     // DEBUG
     NSArray *before = permuted(ciphertext, permutation);
 
-    // Now apply the move (with mapped indices).
+    // Now compose the move onto our permutation.
     permutation[[previousPermutationWindow[0] intValue]] = [NSNumber numberWithInt:mod(startIndex + delta, n)];
     // DEBUG
     NSLog(@"delta = %d, endIndex = %d", delta, endIndex);
     NSLog(@"%d + %d = %d (mod %d)", startIndex, delta, mod(startIndex + delta, n), n);
     for (int i = 1; i <= abs(delta); i++) {
       int newI = mod(startIndex + (i - 1) * step, n);
+      // DEBUG
       NSLog(@"%d + (%d - 1) * %d = %d (mod %d)", startIndex, i, step, newI, n);
       permutation[[previousPermutationWindow[i] intValue]] = [NSNumber numberWithInt:newI];
     }
 
     // DEBUG
     NSArray *current = permuted(ciphertext, permutation);
-    NSLog(@"%d moves between %@ and %@ (from %d to %d):\t%@ (window: %@) \t-> permutation: %@", move, before[endIndex], before[endIndex + 1], startIndex, endIndex, [current componentsJoinedByString:@", "], [previousPermutationWindow componentsJoinedByString:@" "], [permutation componentsJoinedByString:@" "]);
+    NSLog(@"%d moves between %@ and %@ (from %d to %d):\t%@ (window: %@)\t-> permutation: %@", move, before[mod(endIndex, n)], before[mod(endIndex + 1, n)], startIndex, endIndex, [current componentsJoinedByString:@", "], [previousPermutationWindow componentsJoinedByString:@" "], [permutation componentsJoinedByString:@" "]);
     NSLog(@"\n");
   }
 
