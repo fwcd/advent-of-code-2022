@@ -27,7 +27,7 @@ void swap(NSMutableArray *array, int i, int j) {
   array[j] = tmp;
 }
 
-NSMutableArray *permuted(NSMutableArray *array, NSArray<NSNumber *> * permutation) {
+NSMutableArray *permuted(NSArray *array, NSArray<NSNumber *> * permutation) {
   NSMutableArray<NSNumber *> *result = [NSMutableArray arrayWithArray:array];
   for (int i = 0; i < [permutation count]; i++) {
     result[[permutation[i] intValue]] = array[i];
@@ -52,7 +52,7 @@ struct MixResult {
   NSArray<NSNumber *> *inversePermutation;
 };
 
-struct MixResult mix(NSMutableArray<NSNumber *> *ciphertext) {
+struct MixResult mix(NSArray<NSNumber *> *ciphertext) {
   // Track permutation and inverse permutation separately. This is to
   // avoid computing the inverse permutation in every iteration (resulting in O(n^2)).
   // This way we only have O(n * max abs(delta)).
@@ -95,11 +95,11 @@ struct MixResult mix(NSMutableArray<NSNumber *> *ciphertext) {
 
 int main(void) {
   @autoreleasepool {
-    NSMutableArray<NSNumber *> *ciphertext = readInput(@"resources/input.txt");
+    NSArray<NSNumber *> *ciphertext = readInput(@"resources/input.txt");
     int n = [ciphertext count];
 
     struct MixResult result = mix(ciphertext);
-    NSArray <NSNumber *>* plaintext = permuted(ciphertext, result.permutation);
+    NSArray<NSNumber *>* plaintext = permuted(ciphertext, result.permutation);
 
     int part1 = 0;
     int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithInt:0]];
