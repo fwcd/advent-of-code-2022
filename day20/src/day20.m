@@ -28,9 +28,9 @@ void swap(NSMutableArray *array, int i, int j) {
 }
 
 NSMutableArray *permuted(NSMutableArray *array, NSArray<NSNumber *> * permutation) {
-  NSMutableArray<NSNumber *> *result = [[NSMutableArray alloc] init];
-  for (int i = 0; i < [array count]; i++) {
-    [result addObject:array[[permutation[i] intValue]]];
+  NSMutableArray<NSNumber *> *result = [NSMutableArray arrayWithArray:array];
+  for (int i = 0; i < [permutation count]; i++) {
+    result[[permutation[i] intValue]] = array[i];
   }
   return result;
 }
