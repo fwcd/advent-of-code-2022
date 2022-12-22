@@ -52,27 +52,46 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
   int n = [ciphertext count];
 
   for (int i = 0; i < n; i++) {
-    int newIndex = [permutation[i] intValue];
-    int delta = [ciphertext[i] intValue];
+    int startIndex = [permutation[i] intValue];
+    int move = [ciphertext[i] intValue];
+    int endIndex = startIndex + move;
+
+    // Deal with weird boundary wrapping
+    if (move < 0) {
+      endIndex = mod(endIndex, n - 1);
+    } else {
+      endIndex = mod(endIndex - 1, n - 1) + 1;
+    }
+
+    int delta = endIndex - startIndex;
     int step = delta >= 0 ? 1 : -1;
 
     // Capture permutation[newIndex], permutation[newIndex + 1], ..., permutation[newIndex + delta]
     // (with indices taken mod n) before rewriting the permutation in-place.
     NSMutableArray<NSNumber *> *previousPermutationWindow = [[NSMutableArray alloc] init];
     for (int i = 0; i <= abs(delta); i++) {
-      [previousPermutationWindow addObject:permutation[mod(newIndex + i * step, n)]];
+      [previousPermutationWindow addObject:permutation[mod(startIndex + i * step, n)]];
     }
+
+    // DEBUG
+    NSArray *before = permuted(ciphertext, permutation);
 
     // Now apply the move (with mapped indices).
-    for (int i = abs(delta); i > 0; i--) {
-      permutation[[previousPermutationWindow[i] intValue]] = [NSNumber numberWithInt:mod(newIndex + (i - 1) * step, n)];
+    permutation[[previousPermutationWindow[0] intValue]] = [NSNumber numberWithInt:mod(startIndex + delta, n)];
+    // DEBUG
+    NSLog(@"delta = %d, endIndex = %d", delta, endIndex);
+    NSLog(@"%d + %d = %d (mod %d)", startIndex, delta, mod(startIndex + delta, n), n);
+    for (int i = 1; i <= abs(delta); i++) {
+      int newI = mod(startIndex + (i - 1) * step, n);
+      NSLog(@"%d + (%d - 1) * %d = %d (mod %d)", startIndex, i, step, newI, n);
+      permutation[[previousPermutationWindow[i] intValue]] = [NSNumber numberWithInt:newI];
     }
-    permutation[[previousPermutationWindow[0] intValue]] = [NSNumber numberWithInt:mod(newIndex + delta, n)];
 
-    NSLog(@"%d moves from new index %d:\t%@ (window: %@)", delta, newIndex, [permuted(ciphertext, permutation) componentsJoinedByString:@", "], [previousPermutationWindow componentsJoinedByString:@" "]);
+    // DEBUG
+    NSArray *current = permuted(ciphertext, permutation);
+    NSLog(@"%d moves between %@ and %@ (from %d to %d):\t%@ (window: %@) \t-> permutation: %@", move, before[endIndex], before[endIndex + 1], startIndex, endIndex, [current componentsJoinedByString:@", "], [previousPermutationWindow componentsJoinedByString:@" "], [permutation componentsJoinedByString:@" "]);
+    NSLog(@"\n");
   }
-
-  // FIXME: Negative deltas behave strangely
 
   return permuted(ciphertext, permutation);
 }
