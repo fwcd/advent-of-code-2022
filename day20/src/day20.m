@@ -47,20 +47,18 @@ long mod(long n, long m) {
   return (n % m + m) % m;
 }
 
-struct MixResult {
-  NSArray<NSNumber *> *permutation;
-  NSArray<NSNumber *> *inversePermutation;
+struct MixState {
+  NSMutableArray<NSNumber *> *permutation;
+  NSMutableArray<NSNumber *> *inversePermutation;
 };
 
-struct MixResult mix(NSArray<NSNumber *> *moves, int n) {
-  // Track permutation and inverse permutation separately. This is to
+void mix(NSArray<NSNumber *> *moves, int n, struct MixState *state) {
+  // We track permutation and inverse permutation separately. This is to
   // avoid computing the inverse permutation in every iteration (resulting in O(n^2)).
   // This way we only have O(n * max abs(delta)).
-  NSMutableArray<NSNumber *> *permutation = range(n);
-  NSMutableArray<NSNumber *> *inversePermutation = range(n);
 
   for (int i = 0; i < n; i++) {
-    int startIndex = [permutation[i] intValue];
+    int startIndex = [state->permutation[i] intValue];
     int move = [moves[i] intValue];
     int endIndex = startIndex + move;
 
@@ -71,24 +69,19 @@ struct MixResult mix(NSArray<NSNumber *> *moves, int n) {
     int step = delta >= 0 ? 1 : -1;
 
     // Compose the move onto our permutation.
-    permutation[[inversePermutation[startIndex] intValue]] = [NSNumber numberWithInt:mod(endIndex, n)];
+    state->permutation[[state->inversePermutation[startIndex] intValue]] = [NSNumber numberWithInt:mod(endIndex, n)];
     for (int i = 1; i <= abs(delta); i++) {
-      permutation[[inversePermutation[mod(startIndex + i * step, n)] intValue]] = [NSNumber numberWithInt:mod(startIndex + (i - 1) * step, n)];
+      state->permutation[[state->inversePermutation[mod(startIndex + i * step, n)] intValue]] = [NSNumber numberWithInt:mod(startIndex + (i - 1) * step, n)];
     }
 
     // Compose the move onto our inverse permutation (this is the easier one since we can perform
     // the move directly on the array rather than needing the extra level of index mapping).
-    NSNumber *tmp = inversePermutation[mod(startIndex, n)];
+    NSNumber *tmp = state->inversePermutation[mod(startIndex, n)];
     for (int i = 0; i < abs(delta); i++) {
-      inversePermutation[mod(startIndex + i * step, n)] = inversePermutation[mod(startIndex + (i + 1) * step, n)];
+      state->inversePermutation[mod(startIndex + i * step, n)] = state->inversePermutation[mod(startIndex + (i + 1) * step, n)];
     }
-    inversePermutation[endIndex] = tmp;
+    state->inversePermutation[endIndex] = tmp;
   }
-
-  return (struct MixResult) {
-    .permutation = permutation,
-    .inversePermutation = inversePermutation
-  };
 }
 
 int solve(NSArray<NSNumber *> *ciphertext, long factor, int rounds) {
@@ -102,21 +95,22 @@ int solve(NSArray<NSNumber *> *ciphertext, long factor, int rounds) {
   }
   NSLog(@"Ciphertext: %@", [scaledCiphertext componentsJoinedByString:@" "]);
 
-  // Perform the initial mixing to find the permutations
-  struct MixResult result = mix(scaledCiphertext, n);
+  // Set up mix state
+  struct MixState state = { .permutation = range(n), .inversePermutation = range(n) };
   NSArray<NSNumber *>* plaintext = scaledCiphertext;
 
   // Apply the permutation for every round
   for (int i = 0; i < rounds; i++) {
-    plaintext = permuted(plaintext, result.permutation);
-    zeroIndex = [result.permutation[zeroIndex] intValue];
-    NSLog(@"Plaintext: %@ (zero index: %d)", [plaintext componentsJoinedByString:@" "], zeroIndex);
+    mix(scaledCiphertext, n, &state);
+    plaintext = permuted(scaledCiphertext, state.permutation);
+    NSLog(@"Plaintext: %@", [plaintext componentsJoinedByString:@" "]);
   }
 
   // Find the solution
   long solution = 0;
+  int zeroOffset = [state.permutation[zeroIndex] intValue];
   for (int i = 1000; i <= 3000; i += 1000) {
-    solution += [plaintext[mod(zeroIndex + i, n)] longValue];
+    solution += [plaintext[mod(zeroOffset + i, n)] longValue];
   }
 
   return solution;
