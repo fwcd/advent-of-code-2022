@@ -43,7 +43,7 @@ NSMutableArray<NSNumber *> *inverted(NSArray<NSNumber *> *permutation) {
   return result;
 }
 
-int mod(int n, int m) {
+long mod(long n, long m) {
   return (n % m + m) % m;
 }
 
@@ -52,14 +52,12 @@ struct MixResult {
   NSArray<NSNumber *> *inversePermutation;
 };
 
-struct MixResult mix(NSArray<NSNumber *> *moves, NSArray<NSNumber *> *ciphertext) {
+struct MixResult mix(NSArray<NSNumber *> *moves, int n) {
   // Track permutation and inverse permutation separately. This is to
   // avoid computing the inverse permutation in every iteration (resulting in O(n^2)).
   // This way we only have O(n * max abs(delta)).
-  NSMutableArray<NSNumber *> *permutation = range([ciphertext count]);
-  NSMutableArray<NSNumber *> *inversePermutation = range([ciphertext count]);
-
-  int n = [ciphertext count];
+  NSMutableArray<NSNumber *> *permutation = range(n);
+  NSMutableArray<NSNumber *> *inversePermutation = range(n);
 
   for (int i = 0; i < n; i++) {
     int startIndex = [permutation[i] intValue];
@@ -93,27 +91,32 @@ struct MixResult mix(NSArray<NSNumber *> *moves, NSArray<NSNumber *> *ciphertext
   };
 }
 
-int solve(NSArray<NSNumber *> *ciphertext, int factor, int rounds) {
+int solve(NSArray<NSNumber *> *ciphertext, long factor, int rounds) {
   int n = [ciphertext count];
-  int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithInt:0]];
+  int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithLong:0]];
 
+  // Scale ciphertext by the given factor
   NSMutableArray<NSNumber *> *scaledCiphertext = [NSMutableArray arrayWithArray:ciphertext];
   for (int i = 0; i < n; i++) {
-    scaledCiphertext[i] = [NSNumber numberWithInt:[ciphertext[i] intValue] * factor];
+    scaledCiphertext[i] = [NSNumber numberWithLong:[ciphertext[i] longValue] * factor];
   }
   NSLog(@"Ciphertext: %@", [scaledCiphertext componentsJoinedByString:@" "]);
 
+  // Perform the initial mixing to find the permutations
+  struct MixResult result = mix(scaledCiphertext, n);
   NSArray<NSNumber *>* plaintext = scaledCiphertext;
+
+  // Apply the permutation for every round
   for (int i = 0; i < rounds; i++) {
-    struct MixResult result = mix(scaledCiphertext, plaintext);
     plaintext = permuted(plaintext, result.permutation);
     zeroIndex = [result.permutation[zeroIndex] intValue];
     NSLog(@"Plaintext: %@ (zero index: %d)", [plaintext componentsJoinedByString:@" "], zeroIndex);
   }
 
-  int solution = 0;
+  // Find the solution
+  long solution = 0;
   for (int i = 1000; i <= 3000; i += 1000) {
-    solution += [plaintext[mod(zeroIndex + i, n)] intValue];
+    solution += [plaintext[mod(zeroIndex + i, n)] longValue];
   }
 
   return solution;
