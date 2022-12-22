@@ -1,7 +1,7 @@
 #import <Foundation/Foundation.h>
 
-NSMutableArray<NSNumber *> *readInput() {
-  NSString *raw = [NSString stringWithContentsOfFile:@"resources/demo.txt" encoding:NSUTF8StringEncoding error:nil];
+NSMutableArray<NSNumber *> *readInput(NSString *filePath) {
+  NSString *raw = [NSString stringWithContentsOfFile:filePath encoding:NSUTF8StringEncoding error:nil];
   NSArray<NSString *> *lines = [raw componentsSeparatedByString:@"\n"];
   NSMutableArray<NSNumber *> *input = [[NSMutableArray alloc] init];
   for (NSString *line in lines) {
@@ -47,7 +47,12 @@ int mod(int n, int m) {
   return (n % m + m) % m;
 }
 
-NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
+struct MixResult {
+  NSArray<NSNumber *> *permutation;
+  NSArray<NSNumber *> *inversePermutation;
+};
+
+struct MixResult mix(NSMutableArray<NSNumber *> *ciphertext) {
   // Track permutation and inverse permutation separately. This is to
   // avoid computing the inverse permutation in every iteration (resulting in O(n^2)).
   // This way we only have O(n * max abs(delta)).
@@ -82,14 +87,30 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
     inversePermutation[endIndex] = tmp;
   }
 
-  return permuted(ciphertext, permutation);
+  return (struct MixResult) {
+    .permutation = permutation,
+    .inversePermutation = inversePermutation
+  };
 }
 
 int main(void) {
   @autoreleasepool {
-    NSMutableArray<NSNumber *> *ciphertext = readInput();
-    NSArray <NSNumber *>* plaintext = mix(ciphertext);
-    NSLog(@"%@", [plaintext componentsJoinedByString:@" "]);
+    NSMutableArray<NSNumber *> *ciphertext = readInput(@"resources/input.txt");
+    int n = [ciphertext count];
+
+    struct MixResult result = mix(ciphertext);
+    NSArray <NSNumber *>* plaintext = permuted(ciphertext, result.permutation);
+
+    int part1 = 0;
+    int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithInt:0]];
+    int offset = [result.permutation[zeroIndex] intValue];
+
+    for (int i = 1000; i <= 3000; i += 1000) {
+      part1 += [plaintext[mod(offset + i, n)] intValue];
+    }
+
+    NSLog(@"Part 1: %d", part1);
+
     return 0;
   }
 }
