@@ -1,5 +1,4 @@
 #import <Foundation/Foundation.h>
-#include <assert.h>
 
 NSMutableArray<NSNumber *> *readInput() {
   NSString *raw = [NSString stringWithContentsOfFile:@"resources/demo.txt" encoding:NSUTF8StringEncoding error:nil];
@@ -68,19 +67,10 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
     int delta = endIndex - startIndex;
     int step = delta >= 0 ? 1 : -1;
 
-    // DEBUG
-    NSArray *before = permuted(ciphertext, permutation);
-
     // Compose the move onto our permutation.
     permutation[[inversePermutation[startIndex] intValue]] = [NSNumber numberWithInt:mod(endIndex, n)];
-    // DEBUG
-    NSLog(@"delta = %d, endIndex = %d", delta, endIndex);
-    NSLog(@"%d + %d = %d (mod %d)", startIndex, delta, mod(startIndex + delta, n), n);
     for (int i = 1; i <= abs(delta); i++) {
-      int newI = mod(startIndex + (i - 1) * step, n);
-      // DEBUG
-      NSLog(@"%d + (%d - 1) * %d = %d (mod %d)", startIndex, i, step, newI, n);
-      permutation[[inversePermutation[mod(startIndex + i * step, n)] intValue]] = [NSNumber numberWithInt:newI];
+      permutation[[inversePermutation[mod(startIndex + i * step, n)] intValue]] = [NSNumber numberWithInt:mod(startIndex + (i - 1) * step, n)];
     }
 
     // Compose the move onto our inverse permutation (this is the easier one since we can perform
@@ -90,13 +80,6 @@ NSMutableArray<NSNumber *> *mix(NSMutableArray<NSNumber *> *ciphertext) {
       inversePermutation[mod(startIndex + i * step, n)] = inversePermutation[mod(startIndex + (i + 1) * step, n)];
     }
     inversePermutation[endIndex] = tmp;
-
-    // DEBUG
-    NSArray *current = permuted(ciphertext, permutation);
-    NSLog(@"%d moves between %@ and %@ (from %d to %d):\t%@\t-> permutation: %@, inv: %@", move, before[mod(endIndex, n)], before[mod(endIndex + 1, n)], startIndex, endIndex, [current componentsJoinedByString:@", "], [permutation componentsJoinedByString:@" "], [inversePermutation componentsJoinedByString:@" "]);
-    NSLog(@"\n");
-
-    assert([inversePermutation isEqualToArray:inverted(permutation)]);
   }
 
   return permuted(ciphertext, permutation);
