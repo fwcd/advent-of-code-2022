@@ -124,6 +124,8 @@ int main(void) {
     NSLog(@"Part 1: %ld", solve(ciphertext, 1, 1));
     NSLog(@"Part 2: %ld", solve(ciphertext, 811589153, 10));
 
+    // FIXME: Find the bug in part 2, why does not even the first round yield the correct result?
+
     return 0;
   }
 }
