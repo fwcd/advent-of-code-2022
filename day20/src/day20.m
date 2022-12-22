@@ -52,7 +52,7 @@ struct MixResult {
   NSArray<NSNumber *> *inversePermutation;
 };
 
-struct MixResult mix(NSArray<NSNumber *> *ciphertext) {
+struct MixResult mix(NSArray<NSNumber *> *moves, NSArray<NSNumber *> *ciphertext) {
   // Track permutation and inverse permutation separately. This is to
   // avoid computing the inverse permutation in every iteration (resulting in O(n^2)).
   // This way we only have O(n * max abs(delta)).
@@ -63,7 +63,7 @@ struct MixResult mix(NSArray<NSNumber *> *ciphertext) {
 
   for (int i = 0; i < n; i++) {
     int startIndex = [permutation[i] intValue];
-    int move = [ciphertext[i] intValue];
+    int move = [moves[i] intValue];
     int endIndex = startIndex + move;
 
     // Deal with weird boundary wrapping
@@ -93,23 +93,38 @@ struct MixResult mix(NSArray<NSNumber *> *ciphertext) {
   };
 }
 
+int solve(NSArray<NSNumber *> *ciphertext, int factor, int rounds) {
+  int n = [ciphertext count];
+  int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithInt:0]];
+
+  NSMutableArray<NSNumber *> *scaledCiphertext = [NSMutableArray arrayWithArray:ciphertext];
+  for (int i = 0; i < n; i++) {
+    scaledCiphertext[i] = [NSNumber numberWithInt:[ciphertext[i] intValue] * factor];
+  }
+  NSLog(@"Ciphertext: %@", [scaledCiphertext componentsJoinedByString:@" "]);
+
+  NSArray<NSNumber *>* plaintext = scaledCiphertext;
+  for (int i = 0; i < rounds; i++) {
+    struct MixResult result = mix(scaledCiphertext, plaintext);
+    plaintext = permuted(plaintext, result.permutation);
+    zeroIndex = [result.permutation[zeroIndex] intValue];
+    NSLog(@"Plaintext: %@ (zero index: %d)", [plaintext componentsJoinedByString:@" "], zeroIndex);
+  }
+
+  int solution = 0;
+  for (int i = 1000; i <= 3000; i += 1000) {
+    solution += [plaintext[mod(zeroIndex + i, n)] intValue];
+  }
+
+  return solution;
+}
+
 int main(void) {
   @autoreleasepool {
-    NSArray<NSNumber *> *ciphertext = readInput(@"resources/input.txt");
-    int n = [ciphertext count];
+    NSArray<NSNumber *> *ciphertext = readInput(@"resources/demo.txt");
 
-    struct MixResult result = mix(ciphertext);
-    NSArray<NSNumber *>* plaintext = permuted(ciphertext, result.permutation);
-
-    int part1 = 0;
-    int zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithInt:0]];
-    int offset = [result.permutation[zeroIndex] intValue];
-
-    for (int i = 1000; i <= 3000; i += 1000) {
-      part1 += [plaintext[mod(offset + i, n)] intValue];
-    }
-
-    NSLog(@"Part 1: %d", part1);
+    NSLog(@"Part 1: %d", solve(ciphertext, 1, 1));
+    NSLog(@"Part 2: %d", solve(ciphertext, 811589153, 10));
 
     return 0;
   }
