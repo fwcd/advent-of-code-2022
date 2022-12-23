@@ -6,7 +6,7 @@ type Valve =
     rate : int
     neighbors : string list }
 
-let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels lead to valves (.+)", RegexOptions.Compiled)
+let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)", RegexOptions.Compiled)
 
 let parseLine (line : string) : Valve = 
   match pattern.Match(line).Groups |> Seq.tail |> Seq.toList with
