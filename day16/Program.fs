@@ -10,33 +10,38 @@ type Step =
   { name : string
     decision : int }
 
+type Graph = Map<string, Valve>
+type Visited = Map<string * int, int * Step list>
+
 /// Searches the graph for a solution in a depth-first manner.
-let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string * string>) (remainingTime : int) : (int * Step list) =
-  if remainingTime > 0 then
-    let valve = Map.find name graph
-    let candidates =
-      [0; 1]
-        |> Seq.collect (fun decision ->
-          let flow = decision * valve.rate * remainingTime
-          valve.neighbors
-            |> Seq.filter (fun (n, _) -> not (visited |> Set.contains (name, n)))
-            |> Seq.map (fun (n, steps) ->
-              let remainingTime' = remainingTime - decision - steps
-              let visited' = visited |> Set.add (name, n)
-              let (subFlow, subSteps) = dfs n graph visited' remainingTime'
-              flow + subFlow, { name = name; decision = decision } :: subSteps))
-        |> Seq.toList
-    ((0, []) :: candidates)
-      |> Seq.maxBy fst
-  else
-    0, []
+let rec dfs (name : string) (graph : Graph) (visited : Visited) (remainingTime : int) : (int * Step list * Visited) =
+  match Map.tryFind (name, remainingTime) visited with
+    | Some (flow, steps) -> flow, steps, visited
+    | None when remainingTime > 0 ->
+      let valve = Map.find name graph
+      let (visited' : Map<string * int, int * Step list>), candidates =
+        [0; 1]
+          |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
+          |> Seq.fold (fun (visited', acc) (decision, (n, steps)) ->
+            let flowDelta = decision * valve.rate * remainingTime
+            let remainingTime' = remainingTime - decision - steps
+            let (subFlow, subSteps, visited'') = dfs n graph visited' remainingTime'
+            let newFlow = flowDelta + subFlow
+            let newSteps = { name = name; decision = decision } :: subSteps
+            (visited'', (newFlow, newSteps) :: acc)) (visited, [])
+      let (flow, steps) =
+        candidates
+          |> Seq.maxBy fst
+      let visited'' = Map.add (name, remainingTime) (flow, steps) visited'
+      flow, steps, visited''
+    | _ -> 0, [], visited
 
 /// Replaces the given neighbor, adding a delta in the given valve.
 let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
   { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldName then newName, steps + stepDelta else n, steps) }
 
 /// Optimizes the given graph by removing zero nodes and merging their steps into their neighbors.
-let optimizeGraph (graph : Map<string, Valve>) : Map<string, Valve> =
+let optimizeGraph (graph : Graph) : Graph =
   match graph
       |> Map.values
       |> Seq.filter (fun v -> v.rate = 0 && (v.neighbors |> List.length) = 2)
@@ -76,6 +81,6 @@ printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
 printfn "==> Searching graph..."
 let initialTime = 30
-let result = dfs "AA" graph Set.empty initialTime
+let (solution, steps, _) = dfs "AA" graph Map.empty initialTime
 
-printfn "Solution: %A" result
+printfn "Solution: %A with steps\n%A" solution steps
