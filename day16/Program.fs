@@ -10,6 +10,7 @@ type Step =
   { name : string
     decision : int }
 
+/// Searches the graph for a solution in a depth-first manner.
 let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string * string>) (remainingTime : int) : (int * Step list) =
   if remainingTime > 0 then
     let valve = Map.find name graph
@@ -30,9 +31,11 @@ let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string *
   else
     0, []
 
+/// Replaces the given neighbor, adding a delta in the given valve.
 let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
   { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldName then newName, steps + stepDelta else n, steps) }
 
+/// Optimizes the given graph by removing zero nodes and merging their steps into their neighbors.
 let optimizeGraph (graph : Map<string, Valve>) : Map<string, Valve> =
   match graph
       |> Map.values
@@ -59,12 +62,18 @@ let parseLine (line : string) : Valve option =
               |> Seq.toList }
     | _ -> None
   
-let graph =
+printfn "==> Reading graph..."
+let baseGraph =
   File.ReadAllText("resources/mini.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
+
+printfn "==> Optimizing graph..."
+let graph =
+  baseGraph
     |> optimizeGraph
 
+printfn "==> Searching graph..."
 let initialTime = 30
 let result = dfs "AA" graph Set.empty initialTime
 
