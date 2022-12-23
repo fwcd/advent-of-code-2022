@@ -4,7 +4,7 @@ open System.Text.RegularExpressions
 type Valve =
   { name : string
     rate : int
-    neighbors : string list }
+    neighbors : (string * int) list }
 
 type Step =
   { name : string
@@ -16,11 +16,11 @@ let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string *
     let candidates =
       [0; 1]
         |> Seq.collect (fun decision ->
-          let remainingTime' = remainingTime - decision - 1
           let flow = decision * valve.rate * remainingTime
           valve.neighbors
-            |> Seq.filter (fun n -> not (visited |> Set.contains (name, n)))
-            |> Seq.map (fun n ->
+            |> Seq.filter (fun (n, _) -> not (visited |> Set.contains (name, n)))
+            |> Seq.map (fun (n, steps) ->
+              let remainingTime' = remainingTime - decision - steps
               let visited' = visited |> Set.add (name, n)
               let (subFlow, subSteps) = dfs n graph visited' remainingTime'
               flow + subFlow, { name = name; decision = decision } :: subSteps))
@@ -30,6 +30,21 @@ let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string *
   else
     0, []
 
+let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
+  { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldName then newName, steps + stepDelta else n, steps) }
+
+let optimizeGraph (graph : Map<string, Valve>) : Map<string, Valve> =
+  match graph
+      |> Map.values
+      |> Seq.filter (fun v -> v.rate = 0 && (v.neighbors |> List.length) = 2)
+      |> Seq.tryHead with
+    | Some { name = name; neighbors = [src, srcSteps; dst, dstSteps] } ->
+        graph
+          |> Map.remove name
+          |> Map.change src (fun v -> Some (replaceNeighbor name dst dstSteps v.Value))
+          |> Map.change dst (fun v -> Some (replaceNeighbor name src srcSteps v.Value))
+    | _ -> graph
+
 let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)", RegexOptions.Compiled)
 
 let parseLine (line : string) : Valve option = 
@@ -38,13 +53,17 @@ let parseLine (line : string) : Valve option =
       Some
         { name = name.Value
           rate = rate.Value |> int
-          neighbors = neighbors.Value.Split(", ") |> Seq.toList }
+          neighbors =
+            neighbors.Value.Split(", ")
+              |> Seq.map (fun n -> (n, 1))
+              |> Seq.toList }
     | _ -> None
   
 let graph =
   File.ReadAllText("resources/mini.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
+    |> optimizeGraph
 
 let initialTime = 30
 let result = dfs "AA" graph Set.empty initialTime
