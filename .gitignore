@@ -4,3 +4,4 @@
 *.swp
 .curry
 .metals
+.fake
