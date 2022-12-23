@@ -9,9 +9,10 @@ case $(uname -s) in
     brew install --cask dotnet
     ;;
   Linux)
-    if command -v snap &> /dev/null; then
-      echo "==> Installing .NET via Snap..."
-      sudo snap install dotnet-sdk --classic --beta
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing .NET via APT..."
+      sudo apt-get install -y dotnet-sdk-6.0
     else
       echo "Unsupported Linux distribution!"
       exit 1
