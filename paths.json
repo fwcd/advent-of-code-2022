@@ -60,7 +60,10 @@
     "lang": "ruby",
     "path": "day15/bin/day15.rb"
   },
-  null,
+  {
+    "lang": "fsharp",
+    "path": "day16/Program.fs"
+  },
   null,
   {
     "path": "day18/day18.shortcut",

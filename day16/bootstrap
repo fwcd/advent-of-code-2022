@@ -1,0 +1,25 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing .NET via Homebrew..."
+    brew install --cask dotnet
+    ;;
+  Linux)
+    if command -v snap &> /dev/null; then
+      echo "==> Installing .NET via Snap..."
+      sudo snap install dotnet-sdk --classic --channel=7.0
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
+
