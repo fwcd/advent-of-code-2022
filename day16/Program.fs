@@ -64,7 +64,7 @@ let parseLine (line : string) : Valve option =
   
 printfn "==> Reading graph..."
 let baseGraph =
-  File.ReadAllText("resources/mini.txt").Split("\n")
+  File.ReadAllText("resources/demo.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
 
@@ -72,6 +72,7 @@ printfn "==> Optimizing graph..."
 let graph =
   baseGraph
     |> optimizeGraph
+printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
 printfn "==> Searching graph..."
 let initialTime = 30
