@@ -6,19 +6,25 @@ type Valve =
     rate : int
     neighbors : string list }
 
-let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string>) (remainingTime : int) : int =
+type Step =
+  { name : string
+    decision : int }
+
+let rec dfs (name : string) (graph : Map<string, Valve>) (visited : Set<string>) (remainingTime : int) : (int * Step list) =
   if remainingTime > 0 && not (visited |> Set.contains name) then
-    let visited' = visited |> Set.add name
     let valve = Map.find name graph
+    let visited' = visited |> Set.add name
     [0; 1]
-      |> List.toSeq
-      |> Seq.map (fun delta -> (remainingTime - delta - 1, delta * valve.rate * remainingTime))
-      |> Seq.collect (fun (remainingTime', flow) ->
+      |> Seq.collect (fun decision ->
+        let remainingTime' = remainingTime - decision - 1
+        let flow = decision * valve.rate * remainingTime
         valve.neighbors
-          |> List.map (fun n -> flow + dfs n graph visited' remainingTime'))
-      |> Seq.max
+          |> Seq.map (fun n ->
+            let (subFlow, subSteps) = dfs n graph visited' remainingTime'
+            flow + subFlow, { name = name; decision = decision } :: subSteps))
+      |> Seq.maxBy fst
   else
-    0
+    0, []
 
 let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)", RegexOptions.Compiled)
 
@@ -39,5 +45,4 @@ let graph =
 let initialTime = 30
 let result = dfs "AA" graph Set.empty initialTime
 
-printfn "Graph: %A" graph
 printfn "Solution: %A" result
