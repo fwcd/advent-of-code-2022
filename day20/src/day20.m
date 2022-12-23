@@ -35,14 +35,6 @@ NSMutableArray *permuted(NSArray *array, NSArray<NSNumber *> * permutation) {
   return result;
 }
 
-NSMutableArray<NSNumber *> *inverted(NSArray<NSNumber *> *permutation) {
-  NSMutableArray<NSNumber *> *result = [NSMutableArray arrayWithArray:permutation];
-  for (long i = 0; i < [permutation count]; i++) {
-    result[[permutation[i] longValue]] = [NSNumber numberWithLong:i];
-  }
-  return result;
-}
-
 long mod(long n, long m) {
   return (n % m + m) % m;
 }
@@ -60,14 +52,7 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
   for (long i = 0; i < n; i++) {
     long startIndex = [state->permutation[i] longValue];
     long move = [moves[i] longValue];
-    long endIndex = startIndex + move;
-
-    // Deal with weird boundary wrapping
-    if (move < 0) {
-      endIndex = mod(endIndex - 1, n - 1) + 1;
-    } else {
-      endIndex = mod(endIndex, n - 1);
-    }
+    long endIndex = mod(startIndex + move, n - 1);
 
     long delta = endIndex - startIndex;
     long absDelta = labs(delta);
@@ -86,18 +71,6 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
       state->inversePermutation[mod(startIndex + i * step, n)] = state->inversePermutation[mod(startIndex + (i + 1) * step, n)];
     }
     state->inversePermutation[endIndex] = tmp;
-
-    // DEBUG
-    NSMutableArray<NSString *> *debug = [[NSMutableArray alloc] init];
-    for (int i = 0; i < n; i++) {
-      int m = [moves[[state->inversePermutation[i] intValue]] intValue];
-      if (i == endIndex) {
-        [debug addObject:[NSString stringWithFormat:@"\x1b[31m%d\x1b[0m", m]];
-      } else {
-        [debug addObject:[NSString stringWithFormat:@"%d", m]];
-      }
-    }
-    NSLog(@"  %@", [debug componentsJoinedByString:@" "]);
   }
 }
 
@@ -110,7 +83,6 @@ long solve(NSArray<NSNumber *> *ciphertext, long key, long rounds) {
   for (long i = 0; i < n; i++) {
     moves[i] = [NSNumber numberWithLong:[ciphertext[i] longValue] * key];
   }
-  NSLog(@"Ciphertext: %@", [moves componentsJoinedByString:@" "]);
 
   // Set up mix state
   struct MixState state = { .permutation = range(n), .inversePermutation = range(n) };
@@ -119,13 +91,12 @@ long solve(NSArray<NSNumber *> *ciphertext, long key, long rounds) {
   // Apply the permutation for every round
   for (long i = 0; i < rounds; i++) {
     mix(moves, n, &state);
-    plaintext = permuted(moves, state.permutation);
-    NSLog(@"Plaintext: %@", [plaintext componentsJoinedByString:@" "]);
   }
 
   // Find the solution
   long solution = 0;
   long zeroOffset = [state.permutation[zeroIndex] longValue];
+  plaintext = permuted(moves, state.permutation);
   for (long i = 1000; i <= 3000; i += 1000) {
     solution += [plaintext[mod(zeroOffset + i, n)] longValue];
   }
@@ -135,12 +106,10 @@ long solve(NSArray<NSNumber *> *ciphertext, long key, long rounds) {
 
 int main(void) {
   @autoreleasepool {
-    NSArray<NSNumber *> *ciphertext = readInput(@"resources/demo.txt");
+    NSArray<NSNumber *> *ciphertext = readInput(@"resources/input.txt");
 
     NSLog(@"Part 1: %ld", solve(ciphertext, 1, 1));
     NSLog(@"Part 2: %ld", solve(ciphertext, 811589153, 10));
-
-    // FIXME: Find the bug in part 2, why does not even the first round yield the correct result?
 
     return 0;
   }
