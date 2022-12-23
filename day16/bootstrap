@@ -11,7 +11,7 @@ case $(uname -s) in
   Linux)
     if command -v snap &> /dev/null; then
       echo "==> Installing .NET via Snap..."
-      sudo snap install dotnet-sdk --classic --channel=7.0
+      sudo snap install dotnet-sdk --classic --beta
     else
       echo "Unsupported Linux distribution!"
       exit 1
