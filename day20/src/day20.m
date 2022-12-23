@@ -101,25 +101,25 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
   }
 }
 
-long solve(NSArray<NSNumber *> *ciphertext, long factor, long rounds) {
+long solve(NSArray<NSNumber *> *ciphertext, long key, long rounds) {
   long n = [ciphertext count];
   long zeroIndex = [ciphertext indexOfObject:[NSNumber numberWithLong:0]];
 
-  // Scale ciphertext by the given factor
-  NSMutableArray<NSNumber *> *scaledCiphertext = [NSMutableArray arrayWithArray:ciphertext];
+  // Scale ciphertext by the key
+  NSMutableArray<NSNumber *> *moves = [NSMutableArray arrayWithArray:ciphertext];
   for (long i = 0; i < n; i++) {
-    scaledCiphertext[i] = [NSNumber numberWithLong:[ciphertext[i] longValue] * factor];
+    moves[i] = [NSNumber numberWithLong:[ciphertext[i] longValue] * key];
   }
-  NSLog(@"Ciphertext: %@", [scaledCiphertext componentsJoinedByString:@" "]);
+  NSLog(@"Ciphertext: %@", [moves componentsJoinedByString:@" "]);
 
   // Set up mix state
   struct MixState state = { .permutation = range(n), .inversePermutation = range(n) };
-  NSArray<NSNumber *>* plaintext = scaledCiphertext;
+  NSArray<NSNumber *>* plaintext = moves;
 
   // Apply the permutation for every round
   for (long i = 0; i < rounds; i++) {
-    mix(scaledCiphertext, n, &state);
-    plaintext = permuted(scaledCiphertext, state.permutation);
+    mix(moves, n, &state);
+    plaintext = permuted(moves, state.permutation);
     NSLog(@"Plaintext: %@", [plaintext componentsJoinedByString:@" "]);
   }
 
