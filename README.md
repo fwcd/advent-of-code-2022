@@ -24,7 +24,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [ ] Day 17
 - [x] Day 18: Apple Shortcuts
 - [ ] Day 19
-- [ ] Day 20: Objective-C
+- [x] Day 20: Objective-C
 - [ ] Day 21
 - [ ] Day 22
 - [ ] Day 23
