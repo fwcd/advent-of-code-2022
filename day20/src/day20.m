@@ -63,7 +63,11 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
     long endIndex = startIndex + move;
 
     // Deal with weird boundary wrapping
-    endIndex = mod(endIndex - 1, n - 1) + 1;
+    if (move < 0) {
+      endIndex = mod(endIndex - 1, n - 1) + 1;
+    } else {
+      endIndex = mod(endIndex, n - 1);
+    }
 
     long delta = endIndex - startIndex;
     long absDelta = labs(delta);
@@ -82,6 +86,8 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
       state->inversePermutation[mod(startIndex + i * step, n)] = state->inversePermutation[mod(startIndex + (i + 1) * step, n)];
     }
     state->inversePermutation[endIndex] = tmp;
+
+    // NSLog(@"%@", [permuted(moves, state->permutation) componentsJoinedByString:@" "]);
   }
 }
 
