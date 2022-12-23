@@ -87,7 +87,17 @@ void mix(NSArray<NSNumber *> *moves, long n, struct MixState *state) {
     }
     state->inversePermutation[endIndex] = tmp;
 
-    // NSLog(@"%@", [permuted(moves, state->permutation) componentsJoinedByString:@" "]);
+    // DEBUG
+    NSMutableArray<NSString *> *debug = [[NSMutableArray alloc] init];
+    for (int i = 0; i < n; i++) {
+      int m = [moves[[state->inversePermutation[i] intValue]] intValue];
+      if (i == endIndex) {
+        [debug addObject:[NSString stringWithFormat:@"\x1b[31m%d\x1b[0m", m]];
+      } else {
+        [debug addObject:[NSString stringWithFormat:@"%d", m]];
+      }
+    }
+    NSLog(@"  %@", [debug componentsJoinedByString:@" "]);
   }
 }
 
