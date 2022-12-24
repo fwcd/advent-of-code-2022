@@ -25,15 +25,21 @@ type Actor =
     valveName : string
     remainingTime : int }
 
+type MemoKey =
+  { us : Actor
+    them : Actor option
+    openValves : Set<string> }
+
 type State =
-  { visited : Map<string * int * Set<string>, Solution> }
+  { visited : Map<MemoKey, Solution> }
 
 /// The empty solution.
 let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner.
 let rec dfs (us : Actor) (them : Actor option) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
-  match Map.tryFind (us.valveName, us.remainingTime, openValves) state.visited with
+  let memoKey = { us = us; them = them; openValves = openValves }
+  match Map.tryFind memoKey state.visited with
     | Some solution -> solution, state
     | None when us.remainingTime > 0 ->
       let valve = Map.find us.valveName graph
@@ -62,7 +68,7 @@ let rec dfs (us : Actor) (them : Actor option) (graph : Graph) (state : State) (
       let solution =
         candidates
           |> Seq.maxBy (fun c -> c.flow)
-      let state'' = { state' with visited = Map.add (us.valveName, us.remainingTime, openValves) solution state'.visited }
+      let state'' = { state' with visited = Map.add memoKey solution state'.visited }
       solution, state''
     | _ -> emptySolution, state
 
