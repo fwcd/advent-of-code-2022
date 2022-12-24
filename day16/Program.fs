@@ -25,6 +25,8 @@ type Actor =
     valveName : string
     remainingTime : int }
 
+// TODO: This memoization approach is still a bit weak for the second part, could we do with a smaller key?
+
 type MemoKey =
   { us : Actor
     them : Actor option
@@ -115,7 +117,7 @@ let parseLine (line : string) : Valve option =
   
 printfn "==> Reading graph..."
 let baseGraph =
-  File.ReadAllText("resources/demo.txt").Split("\n")
+  File.ReadAllText("resources/input.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
 
@@ -136,5 +138,7 @@ printfn "Part 1: %d" part1.flow
 printfn "==> Searching graph for part 2..."
 let initialTime2 = 26
 let (part2, _) = dfs (initialActor "ourselves" initialTime2) (Some (initialActor "elephant" initialTime2)) graph initialState Set.empty
-printfn "Part 2:"
-printfn "%s" (prettySolution initialTime2 part2)
+printfn "Part 2: %d" part2.flow
+
+// To output a detailed list of steps, uncomment:
+// printfn "%s" (prettySolution initialTime2 part2)
