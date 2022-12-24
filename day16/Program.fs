@@ -28,8 +28,7 @@ type Actor =
 // TODO: This memoization approach is still a bit weak for the second part, could we do with a smaller key?
 
 type MemoKey =
-  { us : Actor
-    them : Actor option
+  { actors : Actor list
     openValves : Set<string> }
 
 type State =
@@ -38,41 +37,41 @@ type State =
 /// The empty solution.
 let emptySolution = { flow = 0; steps = [] }
 
-/// Searches the graph for a solution in a depth-first manner.
-let rec dfs (us : Actor) (them : Actor option) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
-  let memoKey = { us = us; them = them; openValves = openValves }
-  match Map.tryFind memoKey state.visited with
-    | Some solution -> solution, state
-    | None when us.remainingTime > 0 ->
-      let valve = Map.find us.valveName graph
-      let (state' : State), candidates =
-        (if (openValves |> Set.contains us.valveName) || valve.rate = 0 then [0] else [0; 1])
-          |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
-          |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
-            let flowDelta = decision * valve.rate * (us.remainingTime - 1)
-            let remainingTime' = us.remainingTime - decision - steps
-            let openValves' = if decision = 1 then openValves |> Set.add us.valveName else openValves
-            let us' = { us with valveName = n; remainingTime = remainingTime' }
-            let nextUs, nextThem =
-              match them with
-                | Some them -> (them, Some us')
-                | None -> (us', None)
-            let (subSolution, state'') = dfs nextUs nextThem graph state' openValves'
-            let newSolution =
-              { flow = flowDelta + subSolution.flow
-                steps = { actorName = us.name
-                          valveName = us.valveName
-                          remainingTime = us.remainingTime
-                          decision = decision
-                          flow = flowDelta
-                          openValves = openValves' } :: subSolution.steps }
-            (state'', newSolution :: acc)) (state, [])
-      let solution =
-        candidates
-          |> Seq.maxBy (fun c -> c.flow)
-      let state'' = { state' with visited = Map.add memoKey solution state'.visited }
-      solution, state''
-    | _ -> emptySolution, state
+/// Searches the graph for a solution in a depth-first manner with the given actors.
+let rec dfs (actors : Actor list) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
+  match actors with
+    | us :: them ->
+      let memoKey = { actors = actors; openValves = openValves }
+      match Map.tryFind memoKey state.visited with
+        | Some solution -> solution, state
+        | None when us.remainingTime > 0 ->
+          let valve = Map.find us.valveName graph
+          let (state' : State), candidates =
+            (if (openValves |> Set.contains us.valveName) || valve.rate = 0 then [0] else [0; 1])
+              |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
+              |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
+                let flowDelta = decision * valve.rate * (us.remainingTime - 1)
+                let remainingTime' = us.remainingTime - decision - steps
+                let openValves' = if decision = 1 then openValves |> Set.add us.valveName else openValves
+                let us' = { us with valveName = n; remainingTime = remainingTime' }
+                let actors' = them @ [us']
+                let (subSolution, state'') = dfs actors' graph state' openValves'
+                let newSolution =
+                  { flow = flowDelta + subSolution.flow
+                    steps = { actorName = us.name
+                              valveName = us.valveName
+                              remainingTime = us.remainingTime
+                              decision = decision
+                              flow = flowDelta
+                              openValves = openValves' } :: subSolution.steps }
+                (state'', newSolution :: acc)) (state, [])
+          let solution =
+            candidates
+              |> Seq.maxBy (fun c -> c.flow)
+          let state'' = { state' with visited = Map.add memoKey solution state'.visited }
+          solution, state''
+        | _ -> dfs them graph state openValves // This actor is done
+    | [] -> emptySolution, state // All actors are done
 
 /// Prettyprints a step.
 let prettyStep (initialTime : int) (step : Step) : string = 
@@ -132,12 +131,12 @@ let initialState = { visited = Map.empty }
 
 printfn "==> Searching graph for part 1..."
 let initialTime1 = 30
-let (part1, _) = dfs (initialActor "us" initialTime1) None graph initialState Set.empty
+let (part1, _) = dfs [initialActor "us" initialTime1] graph initialState Set.empty
 printfn "Part 1: %d" part1.flow
 
 printfn "==> Searching graph for part 2..."
 let initialTime2 = 26
-let (part2, _) = dfs (initialActor "ourselves" initialTime2) (Some (initialActor "elephant" initialTime2)) graph initialState Set.empty
+let (part2, _) = dfs [initialActor "ourselves" initialTime2; initialActor "elephant" initialTime2] graph initialState Set.empty
 printfn "Part 2: %d" part2.flow
 
 // To output a detailed list of steps, uncomment:
