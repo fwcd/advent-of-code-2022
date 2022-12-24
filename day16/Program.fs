@@ -41,6 +41,9 @@ type MemoKey =
 type State =
   { visited : Map<MemoKey, Solution> }
 
+/// Flips the arguments of the given function.
+let flip f x y = f y x
+
 /// The empty bit set.
 let emptyBitSet : BitSet = 0
 
@@ -50,13 +53,21 @@ let insertBit (value : int) (set : BitSet) : BitSet = set ||| (1 <<< value)
 /// Checks whether a bit set contains the given value.
 let containsBit (value : int) (set : BitSet) : bool = (set >>> value) &&& 1 = 1
 
+/// Converts a bit set to a list.
+let rec bitSetToList (set : BitSet) : int list =
+  if set = 0 then
+    []
+  else
+    let sub = (set >>> 1) |> bitSetToList |> List.map (fun i -> i + 1)
+    if (set &&& 1) = 1 then 0 :: sub else sub
+
 /// The empty solution.
 let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner with the given actors.
 /// While the actors take turns, each actor has their own time, thus they semantically
 /// search the graph simulatenously.
-let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValves : BitSet) : (Solution * State) =
+let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (forbiddenIds : BitSet) (openValves : BitSet) : (Solution * State) =
   match actors with
     | us :: them ->
       let memoKey = { actors = actors |> List.map (fun a -> a.data); openValves = openValves }
@@ -69,14 +80,17 @@ let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValve
           let valve = Map.find us.data.valveId graph
           let (state' : State), candidates =
             (if (openValves |> containsBit us.data.valveId) || valve.rate = 0 then [0] else [0; 1])
-              |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
+              |> Seq.collect (fun decision ->
+                valve.neighbors
+                  |> Seq.filter (fun (n, _) -> not (forbiddenIds |> containsBit n))
+                  |> Seq.map (fun n -> decision, n))
               |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
                 let flowDelta = decision * valve.rate * (us.data.remainingTime - 1)
                 let remainingTime' = us.data.remainingTime - decision - steps
                 let openValves' = if decision = 1 then openValves |> insertBit us.data.valveId else openValves
                 let us' = { us with data = { us.data with valveId = n; remainingTime = remainingTime' } }
                 let actors' = them @ [us']
-                let subSolution, state'' = dfs actors' graph state' openValves'
+                let subSolution, state'' = dfs actors' graph state' forbiddenIds openValves'
                 let newSolution =
                   { flow = flowDelta + subSolution.flow
                     steps = { actorName = us.name
@@ -87,20 +101,20 @@ let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValve
                               openValves = openValves' } :: subSolution.steps }
                 (state'', newSolution :: acc)) (state, [])
           let solution =
-            candidates
+            (emptySolution :: candidates)
               |> Seq.maxBy (fun c -> c.flow)
           let state'' = { state' with visited = Map.add memoKey solution state'.visited }
           solution, state''
         | _ ->
           // Solution needs to be searched for, but this actor has no time left and therefore is done
-          dfs them graph state openValves 
+          dfs them graph state forbiddenIds openValves 
     | [] ->
       // All actors are done, therefore don't recurse
       emptySolution, state 
 
 /// Prettyprints a step.
 let prettyStep (initialTime : int) (step : Step) : string = 
-  $"{step.actorName} @ Minute {initialTime - step.remainingTime + 1} \t => {step.valveId} += {step.flow} \t {step.openValves}"
+  $"{step.actorName} @ Minute {initialTime - step.remainingTime + 1} \t => {step.valveId} += {step.flow} \t {step.openValves |> bitSetToList}"
 
 /// Prettyprints a solution.
 let prettySolution (initialTime : int) (solution : Solution) : string =
@@ -146,6 +160,7 @@ let indexGraph (graph : Graph<string>) : Graph<Id> * Map<string, Id> =
 
 let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)", RegexOptions.Compiled)
 
+/// Parses a line to a valve.
 let parseLine (line : string) : Valve<string> option = 
   match pattern.Match(line).Groups |> Seq.tail |> Seq.toList with
     | [name; rate; neighbors] ->
@@ -160,7 +175,7 @@ let parseLine (line : string) : Valve<string> option =
   
 printfn "==> Reading graph..."
 let baseGraph =
-  File.ReadAllText("resources/demo.txt").Split("\n")
+  File.ReadAllText("resources/input.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.id v m) Map.empty
 
@@ -174,15 +189,23 @@ printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 let initialActor name time = { name = name; data = { valveId = indexing |> Map.find "AA"; remainingTime = time } }
 let initialState = { visited = Map.empty }
 
-printfn "==> Searching graph for part 1..."
-let initialTime1 = 30
-let (part1, _) = dfs [initialActor "us" initialTime1] graph initialState emptyBitSet
-printfn "Part 1: %d" part1.flow
+/// Solve the problem by walking along disjoint paths.
+/// Doesn't work for the demo, only for the actual input, but it'll do.
+/// The inefficient way to implement this would be to construct a single
+/// invocation of 'dfs' with the corresponding number of actors.
+let rec solve initialTime actorCount forbiddenIds : int =
+  if actorCount = 0 then
+    0
+  else
+    let (solution, _) = dfs [initialActor "us" initialTime] graph initialState forbiddenIds emptyBitSet
+    let forbiddenIds' = forbiddenIds ||| (solution.steps |> Seq.last).openValves
+    printfn "(forbidden: %A) %s" (forbiddenIds |> bitSetToList) (prettySolution initialTime solution)
+    solution.flow + solve initialTime (actorCount - 1) forbiddenIds'
 
-printfn "==> Searching graph for part 2..."
-let initialTime2 = 26
-let (part2, _) = dfs [initialActor "ourselves" initialTime2; initialActor "elephant" initialTime2] graph initialState emptyBitSet
-printfn "Part 2: %d" part2.flow
+printfn "==> Solving part 1..."
+let part1 = solve 30 1 emptyBitSet
+printfn "Part 1: %d" part1
 
-// To output a detailed list of steps, uncomment:
-// printfn "%s" (prettySolution initialTime2 part2)
+printfn "==> Solving part 2..."
+let part2 = solve 26 2 emptyBitSet
+printfn "Part 2: %d" part2
