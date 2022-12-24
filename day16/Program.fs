@@ -69,7 +69,7 @@ let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (val
   { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldName then newName, steps + stepDelta else n, steps) }
 
 /// Optimizes the given graph by removing zero nodes and merging their steps into their neighbors.
-let optimizeGraph (graph : Graph) : Graph =
+let rec optimizeGraph (graph : Graph) : Graph =
   match graph
       |> Map.values
       |> Seq.filter (fun v -> v.rate = 0 && (v.neighbors |> List.length) = 2)
@@ -79,6 +79,7 @@ let optimizeGraph (graph : Graph) : Graph =
           |> Map.remove name
           |> Map.change src (fun v -> Some (replaceNeighbor name dst dstSteps v.Value))
           |> Map.change dst (fun v -> Some (replaceNeighbor name src srcSteps v.Value))
+          |> optimizeGraph
     | _ -> graph
 
 let pattern = Regex(@"Valve (\w+) has flow rate=(\d+); tunnels? leads? to valves? (.+)", RegexOptions.Compiled)
