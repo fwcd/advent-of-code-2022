@@ -38,13 +38,18 @@ type State =
 let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner with the given actors.
+/// While the actors take turns, each actor has their own time, thus they semantically
+/// search the graph simulatenously.
 let rec dfs (actors : Actor list) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
   match actors with
     | us :: them ->
       let memoKey = { actors = actors; openValves = openValves }
       match Map.tryFind memoKey state.visited with
-        | Some solution -> solution, state
+        | Some solution ->
+          // Solution was memoized,
+          solution, state 
         | None when us.remainingTime > 0 ->
+          // Solution needs to be searched for and this actor still has time left
           let valve = Map.find us.valveName graph
           let (state' : State), candidates =
             (if (openValves |> Set.contains us.valveName) || valve.rate = 0 then [0] else [0; 1])
@@ -55,7 +60,7 @@ let rec dfs (actors : Actor list) (graph : Graph) (state : State) (openValves : 
                 let openValves' = if decision = 1 then openValves |> Set.add us.valveName else openValves
                 let us' = { us with valveName = n; remainingTime = remainingTime' }
                 let actors' = them @ [us']
-                let (subSolution, state'') = dfs actors' graph state' openValves'
+                let subSolution, state'' = dfs actors' graph state' openValves'
                 let newSolution =
                   { flow = flowDelta + subSolution.flow
                     steps = { actorName = us.name
@@ -70,8 +75,12 @@ let rec dfs (actors : Actor list) (graph : Graph) (state : State) (openValves : 
               |> Seq.maxBy (fun c -> c.flow)
           let state'' = { state' with visited = Map.add memoKey solution state'.visited }
           solution, state''
-        | _ -> dfs them graph state openValves // This actor is done
-    | [] -> emptySolution, state // All actors are done
+        | _ ->
+          // Solution needs to be searched for, but this actor has no time left and therefore is done
+          dfs them graph state openValves 
+    | [] ->
+      // All actors are done, therefore don't recurse
+      emptySolution, state 
 
 /// Prettyprints a step.
 let prettyStep (initialTime : int) (step : Step) : string = 
