@@ -95,12 +95,16 @@ let prettySolution (initialTime : int) (solution : Solution) : string =
 let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
   { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldName then newName, steps + stepDelta else n, steps) }
 
+/// Finds a node satisfying a given predicate.
+let findNode (predicate : Valve -> bool) (graph : Graph) : Valve option =
+  graph
+    |> Map.values
+    |> Seq.filter predicate
+    |> Seq.tryHead
+
 /// Optimizes the given graph by removing zero nodes and merging their steps into their neighbors.
 let rec optimizeGraph (graph : Graph) : Graph =
-  match graph
-      |> Map.values
-      |> Seq.filter (fun v -> v.rate = 0 && (v.neighbors |> List.length) = 2)
-      |> Seq.tryHead with
+  match findNode (fun v -> v.rate = 0 && v.neighbors.Length = 2) graph with
     | Some { name = name; neighbors = [src, srcSteps; dst, dstSteps] } ->
         graph
           |> Map.remove name
