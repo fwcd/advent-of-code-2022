@@ -20,15 +20,18 @@ type Solution =
   { flow : int
     steps : Step list }
 
+type ActorData =
+  { valveName : string
+    remainingTime : int }
+
 type Actor =
   { name : string
-    valveName : string
-    remainingTime : int }
+    data : ActorData }
 
 // TODO: This memoization approach is still a bit weak for the second part, could we do with a smaller key?
 
 type MemoKey =
-  { actors : Actor list
+  { actors : ActorData list
     openValves : Set<string> }
 
 type State =
@@ -43,29 +46,29 @@ let emptySolution = { flow = 0; steps = [] }
 let rec dfs (actors : Actor list) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
   match actors with
     | us :: them ->
-      let memoKey = { actors = actors; openValves = openValves }
+      let memoKey = { actors = actors |> List.map (fun a -> a.data); openValves = openValves }
       match Map.tryFind memoKey state.visited with
         | Some solution ->
           // Solution was memoized,
           solution, state 
-        | None when us.remainingTime > 0 ->
+        | None when us.data.remainingTime > 0 ->
           // Solution needs to be searched for and this actor still has time left
-          let valve = Map.find us.valveName graph
+          let valve = Map.find us.data.valveName graph
           let (state' : State), candidates =
-            (if (openValves |> Set.contains us.valveName) || valve.rate = 0 then [0] else [0; 1])
+            (if (openValves |> Set.contains us.data.valveName) || valve.rate = 0 then [0] else [0; 1])
               |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
               |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
-                let flowDelta = decision * valve.rate * (us.remainingTime - 1)
-                let remainingTime' = us.remainingTime - decision - steps
-                let openValves' = if decision = 1 then openValves |> Set.add us.valveName else openValves
-                let us' = { us with valveName = n; remainingTime = remainingTime' }
+                let flowDelta = decision * valve.rate * (us.data.remainingTime - 1)
+                let remainingTime' = us.data.remainingTime - decision - steps
+                let openValves' = if decision = 1 then openValves |> Set.add us.data.valveName else openValves
+                let us' = { us with data = { us.data with valveName = n; remainingTime = remainingTime' } }
                 let actors' = them @ [us']
                 let subSolution, state'' = dfs actors' graph state' openValves'
                 let newSolution =
                   { flow = flowDelta + subSolution.flow
                     steps = { actorName = us.name
-                              valveName = us.valveName
-                              remainingTime = us.remainingTime
+                              valveName = us.data.valveName
+                              remainingTime = us.data.remainingTime
                               decision = decision
                               flow = flowDelta
                               openValves = openValves' } :: subSolution.steps }
@@ -139,7 +142,7 @@ let graph =
     |> optimizeGraph
 printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
-let initialActor name time = { name = name; valveName = "AA"; remainingTime = time }
+let initialActor name time = { name = name; data = { valveName = "AA"; remainingTime = time } }
 let initialState = { visited = Map.empty }
 
 printfn "==> Searching graph for part 1..."
