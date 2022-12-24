@@ -3,6 +3,8 @@ open System.Text.RegularExpressions
 
 type Id = int
 
+type BitSet = int
+
 type Valve<'id> =
   { id : 'id
     rate : int
@@ -14,7 +16,7 @@ type Step =
     remainingTime : int
     decision : int
     flow : int
-    openValves : Set<Id> }
+    openValves : BitSet }
 
 type Graph<'id> when 'id: comparison = Map<'id, Valve<'id>>
 
@@ -34,10 +36,19 @@ type Actor =
 
 type MemoKey =
   { actors : ActorData list
-    openValves : Set<Id> }
+    openValves : BitSet }
 
 type State =
   { visited : Map<MemoKey, Solution> }
+
+/// The empty bit set.
+let emptyBitSet : BitSet = 0
+
+/// Inserts a value into the bit set.
+let insertBit (value : int) (set : BitSet) : BitSet = set ||| (1 <<< value)
+
+/// Checks whether a bit set contains the given value.
+let containsBit (value : int) (set : BitSet) : bool = (set >>> value) &&& 1 = 1
 
 /// The empty solution.
 let emptySolution = { flow = 0; steps = [] }
@@ -45,7 +56,7 @@ let emptySolution = { flow = 0; steps = [] }
 /// Searches the graph for a solution in a depth-first manner with the given actors.
 /// While the actors take turns, each actor has their own time, thus they semantically
 /// search the graph simulatenously.
-let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValves : Set<Id>) : (Solution * State) =
+let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValves : BitSet) : (Solution * State) =
   match actors with
     | us :: them ->
       let memoKey = { actors = actors |> List.map (fun a -> a.data); openValves = openValves }
@@ -57,12 +68,12 @@ let rec dfs (actors : Actor list) (graph : Graph<Id>) (state : State) (openValve
           // Solution needs to be searched for and this actor still has time left
           let valve = Map.find us.data.valveId graph
           let (state' : State), candidates =
-            (if (openValves |> Set.contains us.data.valveId) || valve.rate = 0 then [0] else [0; 1])
+            (if (openValves |> containsBit us.data.valveId) || valve.rate = 0 then [0] else [0; 1])
               |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
               |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
                 let flowDelta = decision * valve.rate * (us.data.remainingTime - 1)
                 let remainingTime' = us.data.remainingTime - decision - steps
-                let openValves' = if decision = 1 then openValves |> Set.add us.data.valveId else openValves
+                let openValves' = if decision = 1 then openValves |> insertBit us.data.valveId else openValves
                 let us' = { us with data = { us.data with valveId = n; remainingTime = remainingTime' } }
                 let actors' = them @ [us']
                 let subSolution, state'' = dfs actors' graph state' openValves'
@@ -97,18 +108,18 @@ let prettySolution (initialTime : int) (solution : Solution) : string =
     |> String.concat "\n"
 
 /// Replaces the given neighbor, adding a delta in the given valve.
-let replaceNeighbor (oldId : Id) (newId : Id) (stepDelta : int) (valve : Valve<Id>) : Valve<Id> =
+let replaceNeighbor (oldId : 'id) (newId : 'id) (stepDelta : int) (valve : Valve<'id>) : Valve<'id> =
   { valve with neighbors = valve.neighbors |> List.map (fun (n, steps) -> if n = oldId then newId, steps + stepDelta else n, steps) }
 
 /// Finds a node satisfying a given predicate.
-let findNode (predicate : Valve<Id> -> bool) (graph : Graph<Id>) : Valve<Id> option =
+let findNode (predicate : Valve<'id> -> bool) (graph : Graph<'id>) : Valve<'id> option =
   graph
     |> Map.values
     |> Seq.filter predicate
     |> Seq.tryHead
 
 /// Optimizes the given graph by removing zero nodes and merging their steps into their neighbors.
-let rec optimizeGraph (graph : Graph<Id>) : Graph<Id> =
+let rec optimizeGraph (graph : Graph<'id>) : Graph<'id> =
   match findNode (fun v -> v.rate = 0 && v.neighbors.Length = 2) graph with
     | Some { id = id; neighbors = [src, srcSteps; dst, dstSteps] } ->
         graph
@@ -148,16 +159,16 @@ let parseLine (line : string) : Valve<string> option =
     | _ -> None
   
 printfn "==> Reading graph..."
-let baseGraph, indexing =
+let baseGraph =
   File.ReadAllText("resources/demo.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.id v m) Map.empty
-    |> indexGraph
 
 printfn "==> Optimizing graph..."
-let graph =
+let graph, indexing =
   baseGraph
     |> optimizeGraph
+    |> indexGraph
 printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
 let initialActor name time = { name = name; data = { valveId = indexing |> Map.find "AA"; remainingTime = time } }
@@ -165,12 +176,12 @@ let initialState = { visited = Map.empty }
 
 printfn "==> Searching graph for part 1..."
 let initialTime1 = 30
-let (part1, _) = dfs [initialActor "us" initialTime1] graph initialState Set.empty
+let (part1, _) = dfs [initialActor "us" initialTime1] graph initialState emptyBitSet
 printfn "Part 1: %d" part1.flow
 
 printfn "==> Searching graph for part 2..."
 let initialTime2 = 26
-let (part2, _) = dfs [initialActor "ourselves" initialTime2; initialActor "elephant" initialTime2] graph initialState Set.empty
+let (part2, _) = dfs [initialActor "ourselves" initialTime2; initialActor "elephant" initialTime2] graph initialState emptyBitSet
 printfn "Part 2: %d" part2.flow
 
 // To output a detailed list of steps, uncomment:
