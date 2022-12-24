@@ -10,7 +10,7 @@ type Step =
   { name : string
     remainingTime : int
     decision : int
-    released : int
+    flow : int
     openValves : Set<string> }
 
 type Graph = Map<string, Valve>
@@ -41,7 +41,7 @@ let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<st
             let (subSolution, state'') = dfs n graph state' openValves' remainingTime'
             let newSolution =
               { flow = flowDelta + subSolution.flow
-                steps = { name = name; remainingTime = remainingTime; decision = decision; released = flowDelta; openValves = openValves' } :: subSolution.steps }
+                steps = { name = name; remainingTime = remainingTime; decision = decision; flow = flowDelta; openValves = openValves' } :: subSolution.steps }
             (state'', newSolution :: acc)) (state, [])
       let solution =
         candidates
@@ -50,6 +50,19 @@ let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<st
       let state'' = { state' with visited = Map.add (name, remainingTime, openValves) solution state'.visited }
       solution, state''
     | _ -> emptySolution, state
+
+/// Prettyprints a step.
+let prettyStep (initialTime : int) (step : Step) : string = 
+  [ $"== Minute {initialTime - step.remainingTime + 1} =="
+    $"At valve {step.name}"
+    $"Releasing {step.flow}"
+    $"Open valves: {step.openValves}" ]
+    |> String.concat "\n"
+
+/// Prettyprints a solution.
+let prettySolution (initialTime : int) (solution : Solution) : string =
+  ($"Flow: {solution.flow}" :: (solution.steps |> List.map (prettyStep initialTime)))
+    |> String.concat "\n"
 
 /// Replaces the given neighbor, adding a delta in the given valve.
 let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
@@ -99,10 +112,5 @@ let initialTime = 30
 let initialState = { visited = Map.empty }
 let (solution, _) = dfs "AA" graph initialState Set.empty initialTime
 
-printfn "Solution: %d" solution.flow
-for step in solution.steps do
-  printfn "== Minute %d ==" (initialTime - step.remainingTime + 1)
-  printfn "At valve %s" step.name
-  if step.decision = 1 then
-    printfn "Opening it, releasing a total of %d" step.released
-  printfn "Open valves: %A" step.openValves
+printfn "%s" (prettySolution initialTime solution)
+
