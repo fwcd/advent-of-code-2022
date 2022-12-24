@@ -15,13 +15,20 @@ type Step =
 
 type Graph = Map<string, Valve>
 
+type Solution =
+  { flow : int
+    steps : Step list }
+
 type State =
-  { visited : Map<string * int, int * Step list> }
+  { visited : Map<string * int, Solution> }
+
+/// The empty solution.
+let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner.
-let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<string>) (remainingTime : int) : (int * Step list * State) =
+let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<string>) (remainingTime : int) : (Solution * State) =
   match Map.tryFind (name, remainingTime) state.visited with
-    | Some (flow, steps) -> flow, steps, state
+    | Some solution -> solution, state
     | None when remainingTime > 0 ->
       let valve = Map.find name graph
       let (state' : State), candidates =
@@ -31,16 +38,17 @@ let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<st
             let flowDelta = decision * valve.rate * (remainingTime - 1)
             let remainingTime' = remainingTime - decision - steps
             let openValves' = if decision = 1 then openValves |> Set.add name else openValves
-            let (subFlow, subSteps, state'') = dfs n graph state' openValves' remainingTime'
-            let newFlow = flowDelta + subFlow
-            let newSteps = { name = name; remainingTime = remainingTime; decision = decision; released = flowDelta; openValves = openValves' } :: subSteps
-            (state'', (newFlow, newSteps) :: acc)) (state, [])
-      let (flow, steps) =
+            let (subSolution, state'') = dfs n graph state' openValves' remainingTime'
+            let newSolution =
+              { flow = flowDelta + subSolution.flow
+                steps = { name = name; remainingTime = remainingTime; decision = decision; released = flowDelta; openValves = openValves' } :: subSolution.steps }
+            (state'', newSolution :: acc)) (state, [])
+      let solution =
         candidates
-          |> Seq.maxBy fst
-      let state'' = { state' with visited = Map.add (name, remainingTime) (flow, steps) state'.visited }
-      flow, steps, state''
-    | _ -> 0, [], state
+          |> Seq.maxBy (fun c -> c.flow)
+      let state'' = { state' with visited = Map.add (name, remainingTime) solution state'.visited }
+      solution, state''
+    | _ -> emptySolution, state
 
 /// Replaces the given neighbor, adding a delta in the given valve.
 let replaceNeighbor (oldName : string) (newName : string) (stepDelta : int) (valve : Valve) : Valve =
@@ -88,10 +96,10 @@ printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 printfn "==> Searching graph..."
 let initialTime = 30
 let initialState = { visited = Map.empty }
-let (solution, steps, _) = dfs "AA" graph initialState Set.empty initialTime
+let (solution, _) = dfs "AA" graph initialState Set.empty initialTime
 
-printfn "Solution: %d" solution
-for step in steps do
+printfn "Solution: %d" solution.flow
+for step in solution.steps do
   printfn "== Minute %d ==" (initialTime - step.remainingTime + 1)
   printfn "At valve %s" step.name
   if step.decision = 1 then
