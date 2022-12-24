@@ -22,7 +22,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 15: Ruby
 - [x] Day 16: F#
 - [ ] Day 17: C#
-- [x] Day 18: Apple Shortcuts
+- [x] Day 18: Apple Shortcuts ([yes, this one](https://support.apple.com/en-us/guide/shortcuts/welcome/ios))
 - [ ] Day 19
 - [x] Day 20: Objective-C
 - [ ] Day 21
