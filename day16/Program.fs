@@ -8,26 +8,30 @@ type Valve =
 
 type Step =
   { name : string
-    decision : int }
+    remainingTime : int
+    decision : int
+    released : int
+    openValves : Set<string> }
 
 type Graph = Map<string, Valve>
 type Visited = Map<string * int, int * Step list>
 
 /// Searches the graph for a solution in a depth-first manner.
-let rec dfs (name : string) (graph : Graph) (visited : Visited) (remainingTime : int) : (int * Step list * Visited) =
+let rec dfs (name : string) (graph : Graph) (visited : Visited) (openValves : Set<string>) (remainingTime : int) : (int * Step list * Visited) =
   match Map.tryFind (name, remainingTime) visited with
     | Some (flow, steps) -> flow, steps, visited
     | None when remainingTime > 0 ->
       let valve = Map.find name graph
       let (visited' : Map<string * int, int * Step list>), candidates =
-        [0; 1]
+        (if openValves |> Set.contains name then [0] else [0; 1])
           |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
           |> Seq.fold (fun (visited', acc) (decision, (n, steps)) ->
-            let flowDelta = decision * valve.rate * remainingTime
+            let flowDelta = decision * valve.rate * (remainingTime - 1)
             let remainingTime' = remainingTime - decision - steps
-            let (subFlow, subSteps, visited'') = dfs n graph visited' remainingTime'
+            let openValves' = if decision = 1 then openValves |> Set.add name else openValves
+            let (subFlow, subSteps, visited'') = dfs n graph visited' openValves' remainingTime'
             let newFlow = flowDelta + subFlow
-            let newSteps = { name = name; decision = decision } :: subSteps
+            let newSteps = { name = name; remainingTime = remainingTime; decision = decision; released = flowDelta; openValves = openValves' } :: subSteps
             (visited'', (newFlow, newSteps) :: acc)) (visited, [])
       let (flow, steps) =
         candidates
@@ -81,6 +85,12 @@ printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
 printfn "==> Searching graph..."
 let initialTime = 30
-let (solution, steps, _) = dfs "AA" graph Map.empty initialTime
+let (solution, steps, _) = dfs "AA" graph Map.empty Set.empty initialTime
 
-printfn "Solution: %A with steps\n%A" solution steps
+printfn "Solution: %d" solution
+for step in steps do
+  printfn "== Minute %d ==" (initialTime - step.remainingTime + 1)
+  printfn "At valve %s" step.name
+  if step.decision = 1 then
+    printfn "Opening it, releasing a total of %d" step.released
+  printfn "Open valves: %A" step.openValves
