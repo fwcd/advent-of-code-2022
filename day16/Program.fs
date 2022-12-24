@@ -7,7 +7,8 @@ type Valve =
     neighbors : (string * int) list }
 
 type Step =
-  { name : string
+  { actorName : string
+    valveName : string
     remainingTime : int
     decision : int
     flow : int
@@ -19,6 +20,11 @@ type Solution =
   { flow : int
     steps : Step list }
 
+type Actor =
+  { name : string
+    valveName : string
+    remainingTime : int }
+
 type State =
   { visited : Map<string * int * Set<string>, Solution> }
 
@@ -26,38 +32,43 @@ type State =
 let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner.
-let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<string>) (remainingTime : int) : (Solution * State) =
-  match Map.tryFind (name, remainingTime, openValves) state.visited with
+let rec dfs (us : Actor) (them : Actor option) (graph : Graph) (state : State) (openValves : Set<string>) : (Solution * State) =
+  match Map.tryFind (us.valveName, us.remainingTime, openValves) state.visited with
     | Some solution -> solution, state
-    | None when remainingTime > 0 ->
-      let valve = Map.find name graph
+    | None when us.remainingTime > 0 ->
+      let valve = Map.find us.valveName graph
       let (state' : State), candidates =
-        (if (openValves |> Set.contains name) || valve.rate = 0 then [0] else [0; 1])
+        (if (openValves |> Set.contains us.valveName) || valve.rate = 0 then [0] else [0; 1])
           |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
           |> Seq.fold (fun (state', acc) (decision, (n, steps)) ->
-            let flowDelta = decision * valve.rate * (remainingTime - 1)
-            let remainingTime' = remainingTime - decision - steps
-            let openValves' = if decision = 1 then openValves |> Set.add name else openValves
-            let (subSolution, state'') = dfs n graph state' openValves' remainingTime'
+            let flowDelta = decision * valve.rate * (us.remainingTime - 1)
+            let remainingTime' = us.remainingTime - decision - steps
+            let openValves' = if decision = 1 then openValves |> Set.add us.valveName else openValves
+            let us' = { us with valveName = n; remainingTime = remainingTime' }
+            let nextUs, nextThem =
+              match them with
+                | Some them -> (them, Some us')
+                | None -> (us', None)
+            let (subSolution, state'') = dfs nextUs nextThem graph state' openValves'
             let newSolution =
               { flow = flowDelta + subSolution.flow
-                steps = { name = name; remainingTime = remainingTime; decision = decision; flow = flowDelta; openValves = openValves' } :: subSolution.steps }
+                steps = { actorName = us.name
+                          valveName = us.valveName
+                          remainingTime = us.remainingTime
+                          decision = decision
+                          flow = flowDelta
+                          openValves = openValves' } :: subSolution.steps }
             (state'', newSolution :: acc)) (state, [])
       let solution =
         candidates
           |> Seq.maxBy (fun c -> c.flow)
-      assert (solution.steps.Head.name = name)
-      let state'' = { state' with visited = Map.add (name, remainingTime, openValves) solution state'.visited }
+      let state'' = { state' with visited = Map.add (us.valveName, us.remainingTime, openValves) solution state'.visited }
       solution, state''
     | _ -> emptySolution, state
 
 /// Prettyprints a step.
 let prettyStep (initialTime : int) (step : Step) : string = 
-  [ $"== Minute {initialTime - step.remainingTime + 1} =="
-    $"At valve {step.name}"
-    $"Releasing {step.flow}"
-    $"Open valves: {step.openValves}" ]
-    |> String.concat "\n"
+  $"{step.actorName} @ Minute {initialTime - step.remainingTime + 1} \t => {step.valveName} += {step.flow} \t {step.openValves}"
 
 /// Prettyprints a solution.
 let prettySolution (initialTime : int) (solution : Solution) : string =
@@ -98,7 +109,7 @@ let parseLine (line : string) : Valve option =
   
 printfn "==> Reading graph..."
 let baseGraph =
-  File.ReadAllText("resources/input.txt").Split("\n")
+  File.ReadAllText("resources/demo.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
 
@@ -108,10 +119,16 @@ let graph =
     |> optimizeGraph
 printfn "Reduced size from %d to %d" baseGraph.Count graph.Count
 
-printfn "==> Searching graph..."
-let initialTime = 30
+let initialActor name time = { name = name; valveName = "AA"; remainingTime = time }
 let initialState = { visited = Map.empty }
-let (solution, _) = dfs "AA" graph initialState Set.empty initialTime
 
-printfn "%s" (prettySolution initialTime solution)
+printfn "==> Searching graph for part 1..."
+let initialTime1 = 30
+let (part1, _) = dfs (initialActor "us" initialTime1) None graph initialState Set.empty
+printfn "Part 1: %d" part1.flow
 
+printfn "==> Searching graph for part 2..."
+let initialTime2 = 26
+let (part2, _) = dfs (initialActor "ourselves" initialTime2) (Some (initialActor "elephant" initialTime2)) graph initialState Set.empty
+printfn "Part 2:"
+printfn "%s" (prettySolution initialTime2 part2)
