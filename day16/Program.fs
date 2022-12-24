@@ -23,7 +23,7 @@ let rec dfs (name : string) (graph : Graph) (visited : Visited) (openValves : Se
     | None when remainingTime > 0 ->
       let valve = Map.find name graph
       let (visited' : Map<string * int, int * Step list>), candidates =
-        (if openValves |> Set.contains name then [0] else [0; 1])
+        (if (openValves |> Set.contains name) || valve.rate = 0 then [0] else [0; 1])
           |> Seq.collect (fun decision -> valve.neighbors |> Seq.map (fun n -> decision, n))
           |> Seq.fold (fun (visited', acc) (decision, (n, steps)) ->
             let flowDelta = decision * valve.rate * (remainingTime - 1)
