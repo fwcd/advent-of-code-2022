@@ -20,14 +20,14 @@ type Solution =
     steps : Step list }
 
 type State =
-  { visited : Map<string * int, Solution> }
+  { visited : Map<string * int * Set<string>, Solution> }
 
 /// The empty solution.
 let emptySolution = { flow = 0; steps = [] }
 
 /// Searches the graph for a solution in a depth-first manner.
 let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<string>) (remainingTime : int) : (Solution * State) =
-  match Map.tryFind (name, remainingTime) state.visited with
+  match Map.tryFind (name, remainingTime, openValves) state.visited with
     | Some solution -> solution, state
     | None when remainingTime > 0 ->
       let valve = Map.find name graph
@@ -46,7 +46,8 @@ let rec dfs (name : string) (graph : Graph) (state : State) (openValves : Set<st
       let solution =
         candidates
           |> Seq.maxBy (fun c -> c.flow)
-      let state'' = { state' with visited = Map.add (name, remainingTime) solution state'.visited }
+      assert (solution.steps.Head.name = name)
+      let state'' = { state' with visited = Map.add (name, remainingTime, openValves) solution state'.visited }
       solution, state''
     | _ -> emptySolution, state
 
