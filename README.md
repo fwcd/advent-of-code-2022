@@ -20,7 +20,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 13: JavaScript
 - [x] Day 14: OCaml
 - [x] Day 15: Ruby
-- [ ] Day 16: F#
+- [x] Day 16: F#
 - [ ] Day 17
 - [x] Day 18: Apple Shortcuts
 - [ ] Day 19
