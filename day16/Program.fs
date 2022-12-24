@@ -84,7 +84,7 @@ let parseLine (line : string) : Valve option =
   
 printfn "==> Reading graph..."
 let baseGraph =
-  File.ReadAllText("resources/demo.txt").Split("\n")
+  File.ReadAllText("resources/input.txt").Split("\n")
     |> Seq.choose parseLine 
     |> Seq.fold (fun m v -> Map.add v.name v m) Map.empty
 
