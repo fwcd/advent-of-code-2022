@@ -1,41 +1,60 @@
-﻿List<Brick> bricks = new List<Brick> {
-  new Brick(new List<Pos> {
+﻿List<Brick> bricks = new List<Brick>
+{
+  new Brick(new List<Pos>
+  {
     new Pos(0, 0), new Pos(1, 0), new Pos(2, 0), new Pos(3, 0),
   }),
-  new Brick(new List<Pos> {
+  new Brick(new List<Pos>
+  {
                    new Pos(1, 0),
     new Pos(0, 1), new Pos(1, 1), new Pos(2, 1),
                    new Pos(1, 2),
   }),
-  new Brick(new List<Pos> {
+  new Brick(new List<Pos>
+  {
                                   new Pos(2, 0),
                                   new Pos(2, 1),
     new Pos(0, 2), new Pos(1, 2), new Pos(2, 2),
   }),
-  new Brick(new List<Pos> {
+  new Brick(new List<Pos>
+  {
     new Pos(0, 0),
     new Pos(0, 1),
     new Pos(0, 2),
     new Pos(0, 3),
   }),
-  new Brick(new List<Pos> {
+  new Brick(new List<Pos>
+  {
     new Pos(0, 0), new Pos(1, 0),
     new Pos(0, 1), new Pos(1, 1),
   }),
 };
 
-int Solve(int count)
+int Solve(int count, string jetPattern)
 {
   Chamber chamber = new Chamber(7);
-  for (int i = 0; i < count; i++)
+  IEnumerator<char> jetStream = jetPattern.Cycle().GetEnumerator();
+  foreach (Brick brick in bricks.Cycle().Take(count))
   {
-    chamber.Drop(bricks[i % bricks.Count]);
-    Console.WriteLine($"{chamber}");
+    chamber.Drop(brick, jetStream);
   }
   return chamber.Height;
 }
 
-Console.WriteLine($"Part 1: {Solve(2022)}");
+string jetPattern = File.ReadAllText("resources/demo.txt").Trim();
+Console.WriteLine($"Part 1: {Solve(2022, jetPattern)}");
+
+public static class Extensions
+{
+  public static IEnumerable<T> Cycle<T>(this IEnumerable<T> enumerable)
+  {
+    List<T> list = enumerable.ToList();
+    for (int i = 0;; i++)
+    {
+      yield return list[i % list.Count];
+    }
+  }
+}
 
 public record struct Pos(int X, int Y)
 {
@@ -58,6 +77,13 @@ public record struct FallingBrick(Brick Brick, Pos Offset)
   }
 
   public FallingBrick Next => new FallingBrick(Brick, Offset + new Pos(0, 1));
+
+  public FallingBrick Shift(char jet) => jet switch
+  {
+    '<' => new FallingBrick(Brick, Offset - new Pos(1, 0)),
+    '>' => new FallingBrick(Brick, Offset + new Pos(1, 0)),
+    _   => throw new ArgumentException($"Invalid jet: {jet}"),
+  };
 }
 
 public class Chamber
@@ -79,10 +105,10 @@ public class Chamber
     Width = width;
   }
 
-  public void Drop(Brick brick)
+  public void Drop(Brick brick, IEnumerator<char> jetStream)
   {
     Spawn(brick);
-    FallToGround();
+    FallToGround(jetStream);
     Place();
   }
 
@@ -91,16 +117,19 @@ public class Chamber
     falling = new FallingBrick(brick, new Pos(2, minY - 4));
   }
 
-  private void FallToGround()
+  private void FallToGround(IEnumerator<char> jetStream)
   {
     if (falling != null)
     {
+      FallingBrick last = this.falling.Value;
       FallingBrick falling = this.falling.Value;
-      while (!IntersectsGround(falling.Next))
+      do
       {
-        falling = falling.Next;
-      }
-      this.falling = falling;
+        jetStream.MoveNext();
+        last = falling;
+        falling = last.Next.Shift(jetStream.Current);
+      } while (!IntersectsGround(falling));
+      this.falling = last;
     }
   }
 
