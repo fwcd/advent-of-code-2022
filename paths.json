@@ -65,7 +65,7 @@
     "path": "day16/Program.fs"
   },
   {
-    "lang": "clike",
+    "lang": "csharp",
     "path": "day17/Program.cs"
   },
   {
