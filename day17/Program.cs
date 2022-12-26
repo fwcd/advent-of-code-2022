@@ -30,57 +30,103 @@ int Solve(int count)
   for (int i = 0; i < count; i++)
   {
     chamber.Drop(bricks[i % bricks.Count]);
+    Console.WriteLine($"{chamber}");
   }
   return chamber.Height;
 }
 
 Console.WriteLine($"Part 1: {Solve(2022)}");
 
-public record struct Pos(int x, int y)
+public record struct Pos(int X, int Y)
 {
-  public static Pos operator+(Pos lhs, Pos rhs) => new Pos(lhs.x + rhs.x, lhs.y + rhs.y);
+  public static Pos operator+(Pos lhs, Pos rhs) => new Pos(lhs.X + rhs.X, lhs.Y + rhs.Y);
 
-  public static Pos operator-(Pos lhs, Pos rhs) => new Pos(lhs.x - rhs.x, lhs.y - rhs.y);
+  public static Pos operator-(Pos lhs, Pos rhs) => new Pos(lhs.X - rhs.X, lhs.Y - rhs.Y);
 }
 
-public record struct Brick(List<Pos> positions);
+public record struct Brick(List<Pos> Positions);
 
-public record struct FallingBrick(Brick brick, Pos offset);
-
-public class Chamber
+public record struct FallingBrick(Brick Brick, Pos Offset)
 {
-  private HashSet<Pos> placed = new HashSet<Pos>();
-  private Nullable<FallingBrick> falling = null;
-  private int width;
-
-  public int Height
+  public IEnumerable<Pos> Positions
   {
     get
     {
-      int min = placed.Select(p => p.y).Min();
-      int max = placed.Select(p => p.y).Max();
-      return max - min;
+      Pos Offset = this.Offset;
+      return Brick.Positions.Select(p => p + Offset);
     }
   }
 
+  public FallingBrick Next => new FallingBrick(Brick, Offset + new Pos(0, 1));
+}
+
+public class Chamber
+{
+  private HashSet<Pos> placedPositions = new HashSet<Pos>();
+  private Nullable<FallingBrick> falling = null;
+
+  public IEnumerable<Pos> Positions =>
+    placedPositions.Concat(falling?.Positions ?? Enumerable.Empty<Pos>());
+
+  private int minY => Positions.Select(p => p.Y).DefaultIfEmpty().Min();
+  private int maxY => Positions.Select(p => p.Y).DefaultIfEmpty().Max();
+
+  public readonly int Width;
+  public int Height => maxY - minY + 1;
+
   public Chamber(int width)
   {
-    this.width = width;
+    Width = width;
   }
 
   public void Drop(Brick brick)
   {
     Spawn(brick);
     FallToGround();
+    Place();
   }
 
   private void Spawn(Brick brick)
   {
-    falling = new FallingBrick(brick, new Pos(2, 0));
+    falling = new FallingBrick(brick, new Pos(2, minY - 4));
   }
 
   private void FallToGround()
   {
-    // TODO
+    if (falling != null)
+    {
+      FallingBrick falling = this.falling.Value;
+      while (!IntersectsGround(falling.Next))
+      {
+        falling = falling.Next;
+      }
+      this.falling = falling;
+    }
+  }
+
+  private void Place()
+  {
+    if (falling != null)
+    {
+      placedPositions.UnionWith(falling.Value.Positions);
+    }
+    falling = null;
+  }
+
+  private bool IntersectsGround(FallingBrick falling) =>
+    (!placedPositions.Any() && falling.Offset.Y >= 4)
+    || falling.Positions.Any(placedPositions.Contains);
+
+  public override string ToString()
+  {
+    HashSet<Pos> fallingPositions = falling?.Positions.ToHashSet() ?? new HashSet<Pos>();
+    return "Chamber:\n" + string.Join('\n', Enumerable.Range(0, Height)
+      .Select(dy => minY + dy)
+      .Select(y => Enumerable.Range(0, Width)
+        .Select(x => new Pos(x, y))
+        .Select(p => fallingPositions.Contains(p)
+          ? '@'
+          : placedPositions.Contains(p) ? '#' : ' '))
+      .Select(cs => string.Concat(cs)));
   }
 }
