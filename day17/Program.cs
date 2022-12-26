@@ -6,27 +6,27 @@
   }),
   new Brick(new List<Pos>
   {
-                   new Pos(1, 0),
-    new Pos(0, 1), new Pos(1, 1), new Pos(2, 1),
-                   new Pos(1, 2),
+                    new Pos(1, -2),
+    new Pos(0, -1), new Pos(1, -1), new Pos(2, -1),
+                    new Pos(1,  0),
   }),
   new Brick(new List<Pos>
   {
-                                  new Pos(2, 0),
-                                  new Pos(2, 1),
-    new Pos(0, 2), new Pos(1, 2), new Pos(2, 2),
+                                  new Pos(2, -2),
+                                  new Pos(2, -1),
+    new Pos(0, 0), new Pos(1, 0), new Pos(2,  0),
   }),
   new Brick(new List<Pos>
   {
-    new Pos(0, 0),
-    new Pos(0, 1),
-    new Pos(0, 2),
-    new Pos(0, 3),
+    new Pos(0, -3),
+    new Pos(0, -2),
+    new Pos(0, -1),
+    new Pos(0,  0),
   }),
   new Brick(new List<Pos>
   {
-    new Pos(0, 0), new Pos(1, 0),
-    new Pos(0, 1), new Pos(1, 1),
+    new Pos(0, -1), new Pos(1, -1),
+    new Pos(0,  0), new Pos(1,  0),
   }),
 };
 
@@ -41,7 +41,7 @@ int Solve(int count, string jetPattern)
   return chamber.Height;
 }
 
-string jetPattern = File.ReadAllText("resources/demo.txt").Trim();
+string jetPattern = File.ReadAllText("resources/input.txt").Trim();
 Console.WriteLine($"Part 1: {Solve(2022, jetPattern)}");
 
 public static class Extensions
@@ -76,14 +76,14 @@ public record struct FallingBrick(Brick Brick, Pos Offset)
     }
   }
 
-  public FallingBrick Next => new FallingBrick(Brick, Offset + new Pos(0, 1));
+  public FallingBrick Next() => new FallingBrick(Brick, Offset + new Pos(0, 1));
 
-  public FallingBrick Shift(char jet) => jet switch
+  public FallingBrick Shift(char jet) => new FallingBrick(Brick, Offset + new Pos(jet switch
   {
-    '<' => new FallingBrick(Brick, Offset - new Pos(1, 0)),
-    '>' => new FallingBrick(Brick, Offset + new Pos(1, 0)),
+    '>' => 1,
+    '<' => -1,
     _   => throw new ArgumentException($"Invalid jet: {jet}"),
-  };
+  }, 0));
 }
 
 public class Chamber
@@ -126,8 +126,9 @@ public class Chamber
       do
       {
         jetStream.MoveNext();
-        last = falling;
-        falling = last.Next.Shift(jetStream.Current);
+        FallingBrick shifted = falling.Shift(jetStream.Current);
+        last = IntersectsWalls(shifted) || IntersectsGround(shifted) ? falling : shifted;
+        falling = last.Next();
       } while (!IntersectsGround(falling));
       this.falling = last;
     }
@@ -142,8 +143,11 @@ public class Chamber
     falling = null;
   }
 
+  private bool IntersectsWalls(FallingBrick falling) =>
+    falling.Positions.Any(p => p.X < 0 || p.X >= Width);
+
   private bool IntersectsGround(FallingBrick falling) =>
-    (!placedPositions.Any() && falling.Offset.Y >= 4)
+    (!placedPositions.Any() && falling.Offset.Y >= 0)
     || falling.Positions.Any(placedPositions.Contains);
 
   public override string ToString()
@@ -155,7 +159,7 @@ public class Chamber
         .Select(x => new Pos(x, y))
         .Select(p => fallingPositions.Contains(p)
           ? '@'
-          : placedPositions.Contains(p) ? '#' : ' '))
+          : placedPositions.Contains(p) ? '#' : '.'))
       .Select(cs => string.Concat(cs)));
   }
 }
