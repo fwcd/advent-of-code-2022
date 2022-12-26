@@ -32,13 +32,31 @@
 
 int Solve(int count, string jetPattern)
 {
-  Chamber chamber = new Chamber(7);
-  IEnumerator<char> jetStream = jetPattern.Cycle().GetEnumerator();
-  foreach (Brick brick in bricks.Cycle().Take(count))
+  var width = 7;
+  var heightOffset = 0;
+  var chamber = new Chamber(width);
+  var jetStream = jetPattern.Select((jet, i) => (jet, i)).Cycle().GetEnumerator();
+  var memo = new Dictionary<(int, int), int>();
+
+  jetStream.MoveNext();
+
+  for (int i = 0; i < count; i++)
   {
-    chamber.Drop(brick, jetStream);
+    var brickIndex = i % bricks.Count;
+    var memoKey = (brickIndex, jetStream.Current.i);
+    if (memo.ContainsKey(memoKey))
+    {
+      int memoHeight = memo[memoKey];
+      heightOffset += memoHeight;
+      chamber = new Chamber(width);
+    }
+    else
+    {
+      chamber.Drop(bricks[brickIndex], jetStream);
+      memo[memoKey] = chamber.Height;
+    }
   }
-  return chamber.Height;
+  return chamber.Height + heightOffset;
 }
 
 string jetPattern = File.ReadAllText("resources/input.txt").Trim();
@@ -105,7 +123,7 @@ public class Chamber
     Width = width;
   }
 
-  public void Drop(Brick brick, IEnumerator<char> jetStream)
+  public void Drop(Brick brick, IEnumerator<(char jet, int i)> jetStream)
   {
     Spawn(brick);
     FallToGround(jetStream);
@@ -117,16 +135,15 @@ public class Chamber
     falling = new FallingBrick(brick, new Pos(2, minY - 4));
   }
 
-  private void FallToGround(IEnumerator<char> jetStream)
+  private void FallToGround(IEnumerator<(char jet, int i)> jetStream)
   {
-    if (falling != null)
+    if (this.falling is FallingBrick falling)
     {
-      FallingBrick last = this.falling.Value;
-      FallingBrick falling = this.falling.Value;
+      FallingBrick last = falling;
       do
       {
+        FallingBrick shifted = falling.Shift(jetStream.Current.jet);
         jetStream.MoveNext();
-        FallingBrick shifted = falling.Shift(jetStream.Current);
         last = IntersectsWalls(shifted) || IntersectsGround(shifted) ? falling : shifted;
         falling = last.Next();
       } while (!IntersectsGround(falling));
@@ -147,8 +164,7 @@ public class Chamber
     falling.Positions.Any(p => p.X < 0 || p.X >= Width);
 
   private bool IntersectsGround(FallingBrick falling) =>
-    (!placedPositions.Any() && falling.Offset.Y >= 0)
-    || falling.Positions.Any(placedPositions.Contains);
+    falling.Offset.Y >= 0 || falling.Positions.Any(placedPositions.Contains);
 
   public override string ToString()
   {
