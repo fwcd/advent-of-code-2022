@@ -30,37 +30,62 @@
   }),
 };
 
-int Solve(int count, string jetPattern)
+long Solve(long count, string jetPattern)
 {
   var width = 7;
-  var heightOffset = 0;
   var chamber = new Chamber(width);
+  var lastHeight = 0;
   var jetStream = jetPattern.Select((jet, i) => (jet, i)).Cycle().GetEnumerator();
-  var memo = new Dictionary<(int, int), int>();
+  var diffs = new List<int>();
 
-  jetStream.MoveNext();
+  // By manual inspection, we know that the diffs are eventually periodic, at least
+  // by the 1000st diff. Therefore we set the minimum period length to 1000.
+  var minPeriodLength = 1000;
+  var tortoise = minPeriodLength;
+  var hare = minPeriodLength;
 
-  for (int i = 0; i < count; i++)
+  for (long i = 0; i < count; i++)
   {
-    var brickIndex = i % bricks.Count;
-    var memoKey = (brickIndex, jetStream.Current.i);
-    if (memo.ContainsKey(memoKey))
+    var brickIndex = (int) (i % bricks.Count);
+    chamber.Drop(bricks[brickIndex], jetStream);
+
+    var diff = chamber.Height - lastHeight;
+    diffs.Add(diff);
+
+    // Start Floyd's tortoise and hare to find period (cycle)
+    if (diffs.Count > 2 * minPeriodLength)
     {
-      int memoHeight = memo[memoKey];
-      heightOffset += memoHeight;
-      chamber = new Chamber(width);
+      hare++;
+      if (i % 2 == 0)
+      {
+        tortoise++;
+        if (hare - tortoise > 0 && diffs.GetRange(tortoise, minPeriodLength).SequenceEqual(diffs.GetRange(hare, minPeriodLength)))
+        {
+          // Found period, now we can compute the rest
+          var periodLength = hare - tortoise;
+          var period = diffs.GetRange(tortoise, periodLength);
+          var remaining = count - tortoise;
+          var remainingPeriods = remaining / periodLength;
+          var remainingRounds = (int) (remaining % periodLength);
+
+          Console.WriteLine($"Found period between {tortoise} and {hare} (length: {periodLength}, remainingPeriods: {remainingPeriods}, remainingRounds: {remainingRounds}):");
+          Console.WriteLine(string.Concat(period));
+
+          return ((long) diffs.GetRange(0, tortoise).Sum())
+            + remainingPeriods * ((long) period.Sum())
+            + ((long) period.GetRange(0, remainingRounds).Sum());
+        }
+      }
     }
-    else
-    {
-      chamber.Drop(bricks[brickIndex], jetStream);
-      memo[memoKey] = chamber.Height;
-    }
+
+    lastHeight = chamber.Height;
   }
-  return chamber.Height + heightOffset;
+  return chamber.Height;
 }
 
 string jetPattern = File.ReadAllText("resources/input.txt").Trim();
 Console.WriteLine($"Part 1: {Solve(2022, jetPattern)}");
+Console.WriteLine($"Part 2: {Solve(1000000000000, jetPattern)}");
 
 public static class Extensions
 {
@@ -142,8 +167,8 @@ public class Chamber
       FallingBrick last = falling;
       do
       {
-        FallingBrick shifted = falling.Shift(jetStream.Current.jet);
         jetStream.MoveNext();
+        FallingBrick shifted = falling.Shift(jetStream.Current.jet);
         last = IntersectsWalls(shifted) || IntersectsGround(shifted) ? falling : shifted;
         falling = last.Next();
       } while (!IntersectsGround(falling));
