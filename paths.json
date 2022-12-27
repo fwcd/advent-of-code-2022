@@ -72,7 +72,10 @@
     "path": "day18/day18.shortcut",
     "binary": true
   },
-  null,
+  {
+    "lang": "rust",
+    "path": "day19/src/main.rs"
+  },
   {
     "lang": "clike",
     "path": "day20/src/day20.m"

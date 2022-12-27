@@ -10,7 +10,7 @@ jobs:
 
     strategy:
       matrix:
-        day: ['02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17']
+        day: ['02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12', '13', '14', '15', '16', '17', '19']
 
     steps:
     - uses: actions/checkout@v3
@@ -19,6 +19,9 @@ jobs:
       working-directory: 'day${{ matrix.day }}'
     - name: Setup Env (if needed)
       run: '([ -x ./env ] && ./env >> "$GITHUB_ENV") || true'
+      working-directory: 'day${{ matrix.day }}'
+    - name: Setup PATH (if needed)
+      run: '([ -x ./path ] && ./path >> "$GITHUB_PATH") || true'
       working-directory: 'day${{ matrix.day }}'
     - name: Run
       run: ./run
