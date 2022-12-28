@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, iter, ops::{AddAssign, Index, IndexMut}, fmt};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, cell::RefCell, iter};
 
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
@@ -197,41 +197,44 @@ impl State {
         Some(next)
     }
 
-    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = (Option<Material>, Self)> + 'a {
-        iter::once(self.next(None).map(|c| (None, c)))
-            .chain(blueprint.robots.iter().map(|r| Some((Some(r.material), self.next(Some(r))?))))
+    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl ParallelIterator<Item = (Option<Material>, Self)> + 'a {
+        rayon::iter::once(self.next(None).map(|c| (None, c)))
+            .chain(blueprint.robots.par_iter().map(|r| Some((Some(r.material), self.next(Some(r))?))))
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut HashMap<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
-        let memo_key = (remaining_minutes, self.clone());
-        if let Some(&geodes) = memo.get(&memo_key) {
-            geodes
-        } else {
-            let geodes = if remaining_minutes == 0 {
-                self.materials.geode
-            } else {
-                self.childs(blueprint)
-                    .map(|(m, c)| {
-                        if remaining_minutes > 15 {
-                            println!("{}. ({:?} -> robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), m, c.robots, c.materials);
-                        }
-                        c
-                    })
-                    .map(|c| c.dfs_geodes(blueprint, memo, elapsed_minutes + 1, remaining_minutes - 1))
-                    .max()
-                    .unwrap_or(0)
-            };
-            memo.insert(memo_key, geodes);
-            geodes
+    fn dfs_geodes(&self, blueprint: &Blueprint, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
+        thread_local! {
+            static MEMO: RefCell<HashMap<(usize, State), usize>> = RefCell::new(HashMap::new());
         }
+        MEMO.with(|memo| {
+            let memo_key = (remaining_minutes, self.clone());
+            let geodes = memo.borrow().get(&memo_key).cloned();
+            geodes.unwrap_or_else(|| {
+                let geodes = if remaining_minutes == 0 {
+                    self.materials.geode
+                } else {
+                    self.childs(blueprint)
+                        .map(|(m, c)| {
+                            if elapsed_minutes < 6 {
+                                println!("{}. ({:?} -> robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), m, c.robots, c.materials);
+                            }
+                            c
+                        })
+                        .map(|c| c.dfs_geodes(blueprint, elapsed_minutes + 1, remaining_minutes - 1))
+                        .max()
+                        .unwrap_or(0)
+                };
+                memo.borrow_mut().insert(memo_key, geodes);
+                geodes
+            })
+        })
     }
 }
 
 impl Blueprint {
     fn quality_level(&self, remaining_minutes: usize) -> usize {
-        let mut memo = HashMap::new();
-        State::new().dfs_geodes(self, &mut memo, 0, remaining_minutes)
+        State::new().dfs_geodes(self, 0, remaining_minutes)
     }
 }
 
