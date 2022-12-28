@@ -175,8 +175,6 @@ impl State {
         }
     }
 
-    // TODO: Fixed size instead of `Vec`s?
-
     fn step(&mut self) {
         self.materials += self.robots;
         self.remaining_minutes -= 1;
@@ -212,30 +210,38 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
-        if self.elapsed_minutes < 10 {
-            println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
-        }
-        if let Some(geodes) = memo.get(self) {
-            geodes
-        } else {
-            let geodes = if self.remaining_minutes == 0 {
-                self.materials.geode
+    fn max_possible_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
+        let mut dfs_stack = vec![*self];
+        let mut max_geodes: usize = 0;
+        let mut last_elapsed: usize = 0;
+
+        while let Some(state) = dfs_stack.pop() {
+            if state.elapsed_minutes < 10 {
+                println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(state.elapsed_minutes).into_iter().collect::<String>(), state.robots, state.materials);
+            }
+            if let Some(geodes) = memo.get(&state) {
+                max_geodes = max_geodes.max(geodes);
             } else {
-                self.childs(blueprint)
-                    .map(|c| c.dfs_geodes(blueprint, memo))
-                    .max()
-                    .unwrap_or(0)
-            };
-            memo.insert(*self, geodes);
-            geodes
+                if state.remaining_minutes == 0 {
+                    max_geodes = max_geodes.max(state.materials.geode);
+                    memo.insert(state, max_geodes);
+                } else {
+                    dfs_stack.extend(state.childs(blueprint));
+                };
+            }
+            if state.elapsed_minutes < last_elapsed {
+                memo.insert(state, max_geodes);
+            }
+            last_elapsed = state.elapsed_minutes;
         }
+
+        max_geodes
     }
 }
 
 impl Blueprint {
     fn quality_level(&self, memo: &Memo, remaining_minutes: usize) -> usize {
-        State::new(remaining_minutes).dfs_geodes(self, &memo)
+        State::new(remaining_minutes).max_possible_geodes(self, &memo)
     }
 }
 
