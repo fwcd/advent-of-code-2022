@@ -1,5 +1,6 @@
 use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter};
 
+use clap::Parser;
 use once_cell::sync::Lazy;
 use quick_cache::sync::Cache;
 use rayon::prelude::*;
@@ -239,8 +240,21 @@ impl Blueprint {
     }
 }
 
+#[derive(Parser)]
+struct Args {
+    /// The path to the input file.
+    #[arg(short, long, default_value = "resources/demo.txt")]
+    input: String,
+
+    /// The number of minutes to search deep.
+    #[arg(short, long, default_value_t = 24)]
+    minutes: usize,
+}
+
 fn main() {
-    let blueprints = fs::read_to_string("resources/demo.txt").unwrap()
+    let args = Args::parse();
+
+    let blueprints = fs::read_to_string(args.input).unwrap()
         .split('\n')
         .filter(|l| !l.is_empty())
         .filter_map(|l| l.parse().ok())
@@ -248,7 +262,7 @@ fn main() {
     
     let memo = Cache::new(80_000_000);
     let part1 = blueprints.par_iter().enumerate()
-        .map(|(i, b)| (i + 1) * b.quality_level(&memo, 24))
+        .map(|(i, b)| (i + 1) * b.quality_level(&memo, args.minutes))
         .sum::<usize>();
 
     println!("Part 1: {}", part1);
