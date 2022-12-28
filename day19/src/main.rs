@@ -33,10 +33,11 @@ struct Blueprint {
 struct State {
     robots: Materials<usize>,
     materials: Materials<usize>,
+    remaining_minutes: usize,
+    elapsed_minutes: usize,
 }
 
-type MemoKey = (usize, State);
-type Memo = Cache<MemoKey, usize>;
+type Memo = Cache<State, usize>;
 
 impl FromStr for Material {
     type Err = String;
@@ -165,10 +166,12 @@ impl FromStr for Blueprint {
 }
 
 impl State {
-    fn new() -> Self {
+    fn new(remaining_minutes: usize) -> Self {
         Self {
             robots: Materials { ore: 1, ..Default::default() },
             materials: Materials::default(),
+            remaining_minutes,
+            elapsed_minutes: 0,
         }
     }
 
@@ -176,6 +179,8 @@ impl State {
 
     fn step(&mut self) {
         self.materials += self.robots;
+        self.remaining_minutes -= 1;
+        self.elapsed_minutes += 1;
     }
 
     fn can_spend(&self, deltas: Materials<usize>) -> bool {
@@ -207,23 +212,22 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
-        if elapsed_minutes < 10 {
-            println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
+        if self.elapsed_minutes < 10 {
+            println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
-        let memo_key = (remaining_minutes, *self);
-        if let Some(geodes) = memo.get(&memo_key) {
+        if let Some(geodes) = memo.get(self) {
             geodes
         } else {
-            let geodes = if remaining_minutes == 0 {
+            let geodes = if self.remaining_minutes == 0 {
                 self.materials.geode
             } else {
                 self.childs(blueprint)
-                    .map(|c| c.dfs_geodes(blueprint, memo, elapsed_minutes + 1, remaining_minutes - 1))
+                    .map(|c| c.dfs_geodes(blueprint, memo))
                     .max()
                     .unwrap_or(0)
             };
-            memo.insert(memo_key, geodes);
+            memo.insert(*self, geodes);
             geodes
         }
     }
@@ -231,7 +235,7 @@ impl State {
 
 impl Blueprint {
     fn quality_level(&self, memo: &Memo, remaining_minutes: usize) -> usize {
-        State::new().dfs_geodes(self, &memo, 0, remaining_minutes)
+        State::new(remaining_minutes).dfs_geodes(self, &memo)
     }
 }
 
