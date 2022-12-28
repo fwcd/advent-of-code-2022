@@ -196,9 +196,9 @@ impl State {
         Some(next)
     }
 
-    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
-        iter::once(self.next(None))
-            .chain(blueprint.robots.iter().map(|r| self.next(Some(r))))
+    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = (Option<Material>, Self)> + 'a {
+        iter::once(self.next(None).map(|c| (None, c)))
+            .chain(blueprint.robots.iter().map(|r| Some((Some(r.material), self.next(Some(r))?))))
             .flatten()
     }
 
@@ -211,9 +211,9 @@ impl State {
                 self.materials.geode
             } else {
                 self.childs(blueprint)
-                    .map(|c| {
+                    .map(|(m, c)| {
                         if remaining_minutes > 15 {
-                            println!("{}. (searching robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
+                            println!("{}. ({:?} -> robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), m, c.robots, c.materials);
                         }
                         c
                     })
