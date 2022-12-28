@@ -197,9 +197,9 @@ impl State {
         Some(next)
     }
 
-    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl ParallelIterator<Item = (Option<Material>, Self)> + 'a {
-        rayon::iter::once(self.next(None).map(|c| (None, c)))
-            .chain(blueprint.robots.par_iter().map(|r| Some((Some(r.material), self.next(Some(r))?))))
+    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl ParallelIterator<Item = Self> + 'a {
+        rayon::iter::once(self.next(None))
+            .chain(blueprint.robots.par_iter().map(|r| self.next(Some(r))))
             .flatten()
     }
 
@@ -208,6 +208,9 @@ impl State {
             static MEMO: RefCell<HashMap<(usize, State), usize>> = RefCell::new(HashMap::new());
         }
         MEMO.with(|memo| {
+            if elapsed_minutes < 10 {
+                println!("{}. (robots: {}, materials: {}, memo: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials, memo.borrow().len());
+            }
             let memo_key = (remaining_minutes, self.clone());
             let geodes = memo.borrow().get(&memo_key).cloned();
             geodes.unwrap_or_else(|| {
@@ -215,12 +218,6 @@ impl State {
                     self.materials.geode
                 } else {
                     self.childs(blueprint)
-                        .map(|(m, c)| {
-                            if elapsed_minutes < 6 {
-                                println!("{}. ({:?} -> robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), m, c.robots, c.materials);
-                            }
-                            c
-                        })
                         .map(|c| c.dfs_geodes(blueprint, elapsed_minutes + 1, remaining_minutes - 1))
                         .max()
                         .unwrap_or(0)
