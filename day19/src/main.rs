@@ -1,6 +1,7 @@
 use std::{fs, collections::HashMap, str::FromStr, iter, ops::{AddAssign, Index, IndexMut}, fmt};
 
 use once_cell::sync::Lazy;
+use rayon::prelude::*;
 use regex::Regex;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -241,7 +242,7 @@ fn main() {
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<Blueprint>>();
     
-    let part1 = blueprints.iter().enumerate()
+    let part1 = blueprints.par_iter().enumerate()
         .map(|(i, b)| (i + 1) * b.quality_level(24))
         .sum::<usize>();
 
