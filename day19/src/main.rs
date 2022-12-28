@@ -29,7 +29,7 @@ struct Blueprint {
     robots: Vec<Robot>,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct State {
     robots: Materials<usize>,
     materials: Materials<usize>,
@@ -184,7 +184,7 @@ impl State {
     }
 
     fn next(&self, robot: Option<&Robot>) -> Option<Self> {
-        let mut next = self.clone();
+        let mut next = *self;
         if let Some(robot) = robot {
             if !self.can_spend(robot.costs) {
                 return None;
@@ -212,7 +212,7 @@ impl State {
             if elapsed_minutes < 10 {
                 println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
             }
-            let memo_key = (remaining_minutes, self.clone());
+            let memo_key = (remaining_minutes, *self);
             let geodes = memo.borrow_mut().get(&memo_key).cloned();
             geodes.unwrap_or_else(|| {
                 let geodes = if remaining_minutes == 0 {
