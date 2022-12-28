@@ -235,8 +235,8 @@ impl State {
 }
 
 impl Blueprint {
-    fn quality_level(&self, remaining_minutes: usize) -> usize {
-        let mut memo = Cache::new(80_000_000);
+    fn quality_level(&self, remaining_minutes: usize, cache_size: usize) -> usize {
+        let mut memo = Cache::new(cache_size);
         State::new(remaining_minutes).dfs_geodes(self, &mut memo)
     }
 }
@@ -250,6 +250,10 @@ struct Args {
     /// The number of minutes to search deep.
     #[arg(short, long, default_value_t = 24)]
     minutes: usize,
+
+    /// The number of cache entries per thread.
+    #[arg(short, long, default_value_t = 80_000_000)]
+    cache_size: usize,
 }
 
 fn main() {
@@ -262,7 +266,7 @@ fn main() {
         .collect::<Vec<Blueprint>>();
     
     let part1 = blueprints.par_iter().enumerate()
-        .map(|(i, b)| (i + 1) * b.quality_level(args.minutes))
+        .map(|(i, b)| (i + 1) * b.quality_level(args.minutes, args.cache_size))
         .sum::<usize>();
 
     println!("Part 1: {}", part1);
