@@ -61,29 +61,38 @@ impl State {
         }
     }
 
+    fn count(&self, material: &str) -> usize {
+        *self.materials.get(material).unwrap_or(&0)
+    }
+
     fn geodes(&self) -> usize {
-        *self.materials.get("geode").unwrap_or(&0)
+        self.count("geode")
     }
 
     // TODO: Fixed size instead of `Vec`s?
 
     fn step(&mut self) {
         for (material, count) in self.robots.iter() {
-            let current = *self.materials.get(material).unwrap_or(&0);
-            self.materials.insert(material.clone(), current + count);
+            self.materials.insert(material.clone(), self.count(material) + count);
         }
+    }
+
+    fn can_spend(&self, deltas: &HashMap<String, usize>) -> bool {
+        deltas.iter().all(|(m, &d)| self.count(m) >= d)
     }
 
     fn spend(&mut self, deltas: &HashMap<String, usize>) {
         for (material, delta) in deltas.iter() {
-            let current = *self.materials.get(material).unwrap_or(&0);
-            self.materials.insert(material.clone(), current - delta);
+            self.materials.insert(material.clone(), self.count(material) - delta);
         }
     }
 
-    fn next(&self, robot: Option<&Robot>) -> Self {
+    fn next(&self, robot: Option<&Robot>) -> Option<Self> {
         let mut next = self.clone();
         if let Some(robot) = robot {
+            if !self.can_spend(&robot.costs) {
+                return None;
+            }
             next.spend(&robot.costs);
         }
         next.step();
@@ -91,14 +100,13 @@ impl State {
             let current = *next.robots.get(&robot.name).unwrap_or(&0);
             next.robots.insert(robot.name.clone(), current + 1);
         }
-        next
+        Some(next)
     }
 
     fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
-        iter::once(self.next(None)).chain(
-            blueprint.robots.iter()
-                .map(|r| self.next(Some(r)))
-        )
+        iter::once(self.next(None))
+            .chain(blueprint.robots.iter().map(|r| self.next(Some(r))))
+            .flatten()
     }
 
     fn dfs_geodes(&self, blueprint: &Blueprint, remaining_minutes: usize) -> usize {
