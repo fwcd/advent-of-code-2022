@@ -35,6 +35,9 @@ struct State {
     materials: Materials<usize>,
 }
 
+type MemoKey = (usize, State);
+type Memo = Cache<MemoKey, usize>;
+
 impl FromStr for Material {
     type Err = String;
 
@@ -204,7 +207,7 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Cache<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
         if elapsed_minutes < 10 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
@@ -227,7 +230,7 @@ impl State {
 }
 
 impl Blueprint {
-    fn quality_level(&self, memo: &Cache<(usize, State), usize>, remaining_minutes: usize) -> usize {
+    fn quality_level(&self, memo: &Memo, remaining_minutes: usize) -> usize {
         State::new().dfs_geodes(self, &memo, 0, remaining_minutes)
     }
 }
