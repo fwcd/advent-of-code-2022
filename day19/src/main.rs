@@ -1,7 +1,7 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter, num::NonZeroUsize};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter};
 
-use lru::LruCache;
 use once_cell::sync::Lazy;
+use quick_cache::sync::Cache;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -204,13 +204,12 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut LruCache<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Cache<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
         if elapsed_minutes < 10 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
         let memo_key = (remaining_minutes, *self);
-        let geodes = memo.get(&memo_key).cloned();
-        if let Some(geodes) = geodes {
+        if let Some(geodes) = memo.get(&memo_key) {
             geodes
         } else {
             let geodes = if remaining_minutes == 0 {
@@ -221,16 +220,15 @@ impl State {
                     .max()
                     .unwrap_or(0)
             };
-            memo.put(memo_key, geodes);
+            memo.insert(memo_key, geodes);
             geodes
         }
     }
 }
 
 impl Blueprint {
-    fn quality_level(&self, remaining_minutes: usize) -> usize {
-        let mut memo = LruCache::new(NonZeroUsize::new(20_000_000).unwrap());
-        State::new().dfs_geodes(self, &mut memo, 0, remaining_minutes)
+    fn quality_level(&self, memo: &Cache<(usize, State), usize>, remaining_minutes: usize) -> usize {
+        State::new().dfs_geodes(self, &memo, 0, remaining_minutes)
     }
 }
 
@@ -241,8 +239,9 @@ fn main() {
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<Blueprint>>();
     
+    let memo = Cache::new(80_000_000);
     let part1 = blueprints.par_iter().enumerate()
-        .map(|(i, b)| (i + 1) * b.quality_level(24))
+        .map(|(i, b)| (i + 1) * b.quality_level(&memo, 24))
         .sum::<usize>();
 
     println!("Part 1: {}", part1);
