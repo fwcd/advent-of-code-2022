@@ -109,12 +109,18 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, remaining_minutes: usize) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut HashMap<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
         if remaining_minutes == 0 {
             self.geodes()
         } else {
             self.childs(blueprint)
-                .map(|c| c.dfs_geodes(blueprint, remaining_minutes - 1))
+                .map(|c| {
+                    if remaining_minutes > 11 {
+                        println!("{}. (searching {:?})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self);
+                    }
+                    c
+                })
+                .map(|c| c.dfs_geodes(blueprint, memo, elapsed_minutes + 1, remaining_minutes - 1))
                 .max()
                 .unwrap_or(0)
         }
@@ -123,7 +129,8 @@ impl State {
 
 impl Blueprint {
     fn quality_level(&self, remaining_minutes: usize) -> usize {
-        State::new().dfs_geodes(self, remaining_minutes)
+        let mut memo = HashMap::new();
+        State::new().dfs_geodes(self, &mut memo, 0, remaining_minutes)
     }
 }
 
