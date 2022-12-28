@@ -1,5 +1,6 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, cell::RefCell, iter};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, cell::RefCell, iter, num::NonZeroUsize};
 
+use lru::LruCache;
 use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use regex::Regex;
@@ -205,14 +206,14 @@ impl State {
 
     fn dfs_geodes(&self, blueprint: &Blueprint, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
         thread_local! {
-            static MEMO: RefCell<HashMap<(usize, State), usize>> = RefCell::new(HashMap::new());
+            static MEMO: RefCell<LruCache<(usize, State), usize>> = RefCell::new(LruCache::new(NonZeroUsize::new(4_000_000).unwrap()));
         }
         MEMO.with(|memo| {
             if elapsed_minutes < 10 {
-                println!("{}. (robots: {}, materials: {}, memo: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials, memo.borrow().len());
+                println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
             }
             let memo_key = (remaining_minutes, self.clone());
-            let geodes = memo.borrow().get(&memo_key).cloned();
+            let geodes = memo.borrow_mut().get(&memo_key).cloned();
             geodes.unwrap_or_else(|| {
                 let geodes = if remaining_minutes == 0 {
                     self.materials.geode
@@ -222,7 +223,7 @@ impl State {
                         .max()
                         .unwrap_or(0)
                 };
-                memo.borrow_mut().insert(memo_key, geodes);
+                memo.borrow_mut().put(memo_key, geodes);
                 geodes
             })
         })
