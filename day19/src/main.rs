@@ -235,7 +235,7 @@ impl State {
 }
 
 impl Blueprint {
-    fn quality_level(&self, remaining_minutes: usize, cache_size: usize) -> usize {
+    fn max_geodes(&self, remaining_minutes: usize, cache_size: usize) -> usize {
         let mut memo = Cache::new(cache_size);
         State::new(remaining_minutes).dfs_geodes(self, &mut memo)
     }
@@ -247,13 +247,25 @@ struct Args {
     #[arg(short, long, default_value = "resources/demo.txt")]
     input: String,
 
-    /// The number of minutes to search deep.
+    /// The number of minutes to search deep for part 1.
     #[arg(short, long, default_value_t = 24)]
-    minutes: usize,
+    part1_minutes: usize,
+
+    /// The number of minutes to search deep for part 2.
+    #[arg(short, long, default_value_t = 32)]
+    part2_minutes: usize,
 
     /// The number of cache entries per thread.
     #[arg(short, long, default_value_t = 80_000_000)]
     cache_size: usize,
+
+    /// Whether to skip part 1.
+    #[arg(long, default_value_t = false)]
+    skip_part1: bool,
+
+    /// Whether to skip part 2.
+    #[arg(long, default_value_t = false)]
+    skip_part2: bool,
 }
 
 fn main() {
@@ -265,9 +277,20 @@ fn main() {
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<Blueprint>>();
     
-    let part1 = blueprints.par_iter().enumerate()
-        .map(|(i, b)| (i + 1) * b.quality_level(args.minutes, args.cache_size))
-        .sum::<usize>();
+    if !args.skip_part1 {
+        let part1 = blueprints.par_iter().enumerate()
+            .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes, args.cache_size))
+            .sum::<usize>();
 
-    println!("Part 1: {}", part1);
+        println!("Part 1: {}", part1);
+    }
+
+    if !args.skip_part2 {
+        let part2 = blueprints.par_iter().enumerate()
+            .take(3)
+            .map(|(i, b)| b.max_geodes(args.part2_minutes, args.cache_size))
+            .product::<usize>();
+
+        println!("Part 2: {}", part2);
+    }
 }
