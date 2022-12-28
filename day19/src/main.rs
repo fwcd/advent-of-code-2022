@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, iter};
+use std::{fs, collections::{HashMap, BTreeMap}, str::FromStr, iter};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -16,10 +16,10 @@ struct Blueprint {
     robots: Vec<Robot>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct State {
-    robots: HashMap<String, usize>,
-    materials: HashMap<String, usize>,
+    robots: BTreeMap<String, usize>,
+    materials: BTreeMap<String, usize>,
 }
 
 impl FromStr for Robot {
@@ -110,19 +110,26 @@ impl State {
     }
 
     fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut HashMap<(usize, State), usize>, elapsed_minutes: usize, remaining_minutes: usize) -> usize {
-        if remaining_minutes == 0 {
-            self.geodes()
+        let memo_key = (remaining_minutes, self.clone());
+        if let Some(&geodes) = memo.get(&memo_key) {
+            geodes
         } else {
-            self.childs(blueprint)
-                .map(|c| {
-                    if remaining_minutes > 11 {
-                        println!("{}. (searching {:?})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self);
-                    }
-                    c
-                })
-                .map(|c| c.dfs_geodes(blueprint, memo, elapsed_minutes + 1, remaining_minutes - 1))
-                .max()
-                .unwrap_or(0)
+            let geodes = if remaining_minutes == 0 {
+                self.geodes()
+            } else {
+                self.childs(blueprint)
+                    .map(|c| {
+                        if remaining_minutes > 15 {
+                            println!("{}. (searching {:?})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self);
+                        }
+                        c
+                    })
+                    .map(|c| c.dfs_geodes(blueprint, memo, elapsed_minutes + 1, remaining_minutes - 1))
+                    .max()
+                    .unwrap_or(0)
+            };
+            memo.insert(memo_key, geodes);
+            geodes
         }
     }
 }
