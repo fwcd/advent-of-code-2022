@@ -2,7 +2,7 @@ use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexM
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-use quick_cache::unsync::Cache;
+use quick_cache::sync::Cache;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -207,18 +207,18 @@ impl State {
         Some(next)
     }
 
-    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
-        iter::once(self.next(None))
-            .chain(blueprint.robots.iter().map(|r| self.next(Some(r))))
+    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl ParallelIterator<Item = Self> + 'a {
+        rayon::iter::once(self.next(None))
+            .chain(blueprint.robots.par_iter().map(|r| self.next(Some(r))))
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut Memo) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
         if self.elapsed_minutes < 10 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
         if let Some(geodes) = memo.get(self) {
-            *geodes
+            geodes
         } else {
             let geodes = if self.remaining_minutes == 0 {
                 self.materials.geode
@@ -288,7 +288,7 @@ fn main() {
     if !args.skip_part2 {
         let part2 = blueprints.par_iter().enumerate()
             .take(3)
-            .map(|(i, b)| b.max_geodes(args.part2_minutes, args.cache_size))
+            .map(|(_, b)| b.max_geodes(args.part2_minutes, args.cache_size))
             .product::<usize>();
 
         println!("Part 2: {}", part2);
