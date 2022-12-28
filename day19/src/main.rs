@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, iter, ops::{AddAssign, Index, IndexMut}};
+use std::{fs, collections::HashMap, str::FromStr, iter, ops::{AddAssign, Index, IndexMut}, fmt};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
@@ -44,6 +44,16 @@ impl FromStr for Material {
             "geode" => Ok(Self::Geode),
             _ => Err(format!("Could not parse material '{}'", s)),
         }
+    }
+}
+
+impl fmt::Display for Materials<usize> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for _ in 0..self.ore { write!(f, "O")?; }
+        for _ in 0..self.clay { write!(f, "C")?; }
+        for _ in 0..self.obsidian { write!(f, "B")?; }
+        for _ in 0..self.geode { write!(f, "G")?; }
+        Ok(())
     }
 }
 
@@ -203,7 +213,7 @@ impl State {
                 self.childs(blueprint)
                     .map(|c| {
                         if remaining_minutes > 15 {
-                            println!("{}. (searching {:?})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self);
+                            println!("{}. (searching robots: {}, materials: {})", iter::repeat(' ').take(elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
                         }
                         c
                     })
