@@ -2,7 +2,7 @@ use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexM
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-use quick_cache::sync::Cache;
+use quick_cache::unsync::Cache;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -213,12 +213,12 @@ impl State {
             .flatten()
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &mut Memo) -> usize {
         if self.elapsed_minutes < 10 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
         if let Some(geodes) = memo.get(self) {
-            geodes
+            *geodes
         } else {
             let geodes = if self.remaining_minutes == 0 {
                 self.materials.geode
@@ -236,8 +236,8 @@ impl State {
 
 impl Blueprint {
     fn quality_level(&self, remaining_minutes: usize) -> usize {
-        let memo = Cache::new(80_000_000);
-        State::new(remaining_minutes).dfs_geodes(self, &memo)
+        let mut memo = Cache::new(80_000_000);
+        State::new(remaining_minutes).dfs_geodes(self, &mut memo)
     }
 }
 
