@@ -1,14 +1,25 @@
-use std::{fs, collections::{HashMap, BTreeMap}, str::FromStr, iter};
+use std::{fs, collections::HashMap, str::FromStr, iter, ops::{AddAssign, Index, IndexMut}};
 
 use once_cell::sync::Lazy;
 use regex::Regex;
 
-// TODO: Use (fixed size) structs (e.g. `Materials`) instead of `HashMap`s?
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+enum Material {
+    Ore, Clay, Obsidian, Geode
+}
+
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
+struct Materials<T> {
+    ore: T,
+    clay: T,
+    obsidian: T,
+    geode: T,
+}
 
 #[derive(Debug, Clone)]
 struct Robot {
-    name: String,
-    costs: HashMap<String, usize>,
+    material: Material,
+    costs: Materials<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -18,8 +29,92 @@ struct Blueprint {
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 struct State {
-    robots: BTreeMap<String, usize>,
-    materials: BTreeMap<String, usize>,
+    robots: Materials<usize>,
+    materials: Materials<usize>,
+}
+
+impl FromStr for Material {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "ore" => Ok(Self::Ore),
+            "clay" => Ok(Self::Clay),
+            "obsidian" => Ok(Self::Obsidian),
+            "geode" => Ok(Self::Geode),
+            _ => Err(format!("Could not parse material '{}'", s)),
+        }
+    }
+}
+
+impl<T> Index<Material> for Materials<T> {
+    type Output = T;
+
+    fn index(&self, index: Material) -> &Self::Output {
+        match index {
+            Material::Ore => &self.ore,
+            Material::Clay => &self.clay,
+            Material::Obsidian => &self.obsidian,
+            Material::Geode => &self.geode,
+        }
+    }
+}
+
+impl<T> IndexMut<Material> for Materials<T> {
+    fn index_mut(&mut self, index: Material) -> &mut Self::Output {
+        match index {
+            Material::Ore => &mut self.ore,
+            Material::Clay => &mut self.clay,
+            Material::Obsidian => &mut self.obsidian,
+            Material::Geode => &mut self.geode,
+        }
+    }
+}
+
+impl<T> Materials<T> {
+    fn map<U>(self, f: impl Fn(T) -> U) -> Materials<U> {
+        Materials {
+            ore: f(self.ore),
+            clay: f(self.clay),
+            obsidian: f(self.obsidian),
+            geode: f(self.geode),
+        }
+    }
+
+    fn zip<U, V>(self, rhs: Materials<U>, f: impl Fn(T, U) -> V) -> Materials<V> {
+        Materials {
+            ore: f(self.ore, rhs.ore),
+            clay: f(self.clay, rhs.clay),
+            obsidian: f(self.obsidian, rhs.obsidian),
+            geode: f(self.geode, rhs.geode),
+        }
+    }
+}
+
+impl Materials<bool> {
+    fn all(self) -> bool {
+        self.ore && self.clay && self.obsidian && self.geode
+    }
+}
+
+impl<T> AddAssign for Materials<T> where T: AddAssign {
+    fn add_assign(&mut self, rhs: Self) {
+        self.ore += rhs.ore;
+        self.clay += rhs.clay;
+        self.obsidian += rhs.obsidian;
+        self.geode += rhs.geode;
+    }
+}
+
+impl From<HashMap<Material, usize>> for Materials<usize> {
+    fn from(map: HashMap<Material, usize>) -> Self {
+        Self {
+            ore: map.get(&Material::Ore).cloned().unwrap_or_default(),
+            clay: map.get(&Material::Clay).cloned().unwrap_or_default(),
+            obsidian: map.get(&Material::Obsidian).cloned().unwrap_or_default(),
+            geode: map.get(&Material::Geode).cloned().unwrap_or_default(),
+        }
+    }
 }
 
 impl FromStr for Robot {
@@ -30,13 +125,14 @@ impl FromStr for Robot {
         const COST_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+) (\w+)").unwrap());
 
         let captures = PATTERN.captures(s).ok_or_else(|| format!("Could not parse '{}'", s))?;
-        let name = captures.name("name").unwrap().as_str().to_owned();
+        let material = captures.name("name").unwrap().as_str().parse()?;
         let raw_costs = captures.name("raw_costs").unwrap();
         let costs = COST_PATTERN.captures_iter(raw_costs.as_str())
-            .map(|c| (c[2].to_owned(), c[1].parse().unwrap()))
-            .collect::<HashMap<String, usize>>();
+            .map(|c| Ok((c[2].parse()?, c[1].parse().unwrap())))
+            .collect::<Result<HashMap<Material, usize>, String>>()?
+            .into();
 
-        Ok(Robot { name, costs })
+        Ok(Robot { material, costs })
     }
 }
 
@@ -56,49 +152,36 @@ impl FromStr for Blueprint {
 impl State {
     fn new() -> Self {
         Self {
-            robots: [("ore".to_owned(), 1)].into(),
-            materials: [].into(),
+            robots: Materials { ore: 1, ..Default::default() },
+            materials: Materials::default(),
         }
-    }
-
-    fn count(&self, material: &str) -> usize {
-        *self.materials.get(material).unwrap_or(&0)
-    }
-
-    fn geodes(&self) -> usize {
-        self.count("geode")
     }
 
     // TODO: Fixed size instead of `Vec`s?
 
     fn step(&mut self) {
-        for (material, count) in self.robots.iter() {
-            self.materials.insert(material.clone(), self.count(material) + count);
-        }
+        self.materials += self.robots;
     }
 
-    fn can_spend(&self, deltas: &HashMap<String, usize>) -> bool {
-        deltas.iter().all(|(m, &d)| self.count(m) >= d)
+    fn can_spend(&self, deltas: Materials<usize>) -> bool {
+        self.materials.zip(deltas, |c, d| c >= d).all()
     }
 
-    fn spend(&mut self, deltas: &HashMap<String, usize>) {
-        for (material, delta) in deltas.iter() {
-            self.materials.insert(material.clone(), self.count(material) - delta);
-        }
+    fn spend(&mut self, deltas: Materials<usize>) {
+        self.materials = self.materials.zip(deltas, |c, d| c - d);
     }
 
     fn next(&self, robot: Option<&Robot>) -> Option<Self> {
         let mut next = self.clone();
         if let Some(robot) = robot {
-            if !self.can_spend(&robot.costs) {
+            if !self.can_spend(robot.costs) {
                 return None;
             }
-            next.spend(&robot.costs);
+            next.spend(robot.costs);
         }
         next.step();
         if let Some(robot) = robot {
-            let current = *next.robots.get(&robot.name).unwrap_or(&0);
-            next.robots.insert(robot.name.clone(), current + 1);
+            next.robots[robot.material] += 1;
         }
         Some(next)
     }
@@ -115,7 +198,7 @@ impl State {
             geodes
         } else {
             let geodes = if remaining_minutes == 0 {
-                self.geodes()
+                self.materials.geode
             } else {
                 self.childs(blueprint)
                     .map(|c| {
