@@ -235,7 +235,8 @@ impl State {
 }
 
 impl Blueprint {
-    fn quality_level(&self, memo: &Memo, remaining_minutes: usize) -> usize {
+    fn quality_level(&self, remaining_minutes: usize) -> usize {
+        let memo = Cache::new(80_000_000);
         State::new(remaining_minutes).dfs_geodes(self, &memo)
     }
 }
@@ -260,9 +261,8 @@ fn main() {
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<Blueprint>>();
     
-    let memo = Cache::new(80_000_000);
     let part1 = blueprints.par_iter().enumerate()
-        .map(|(i, b)| (i + 1) * b.quality_level(&memo, args.minutes))
+        .map(|(i, b)| (i + 1) * b.quality_level(args.minutes))
         .sum::<usize>();
 
     println!("Part 1: {}", part1);
