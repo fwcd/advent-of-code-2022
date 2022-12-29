@@ -205,9 +205,22 @@ impl State {
     }
 
     fn upper_bound_for_geodes(&self) -> usize {
+        // There is a minimum number of minutes until (even without considering the
+        // material costs) we could possibly have a geode robot. This value is
+        // determined by our maximum 'robot level'.
+        let minutes_to_geode_robot = if self.robots.geode > 0 {
+            0
+        } else if self.robots.obsidian > 0 {
+            1
+        } else if self.robots.clay > 0 {
+            2
+        } else {
+            3
+        };
         // Assuming we build a geode robot at every minute, we can use the Gauss formula
         // to get a (very rough) upper bound for the total number of geodes we can harvest.
-        let harvested = (self.remaining_minutes + 1) * self.remaining_minutes;
+        let geode_minutes = self.remaining_minutes - minutes_to_geode_robot;
+        let harvested = (geode_minutes + 1) * geode_minutes;
         self.materials.geode + harvested
     }
 
