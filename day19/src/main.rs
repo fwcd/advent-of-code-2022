@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter, array};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut, Sub, Add}, fmt, iter, array};
 
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -231,7 +231,7 @@ impl State {
             .flatten()
     }
 
-    fn upper_bound_for_geodes(&self) -> usize {
+    fn upper_bound_for_geodes(&self, blueprint: &Blueprint) -> usize {
         // There is a minimum number of minutes until (even without considering the
         // material costs) we could possibly have a geode robot. This value is
         // determined by our maximum 'robot level'.
@@ -242,10 +242,13 @@ impl State {
         } else if self.robots.clay > 0 {
             2
         } else {
-            3
+            let min_costs = blueprint.robots.ore.costs.ore.min(blueprint.robots.clay.costs.ore) / self.robots.ore;
+            3 + min_costs.max(self.materials.ore) - self.materials.ore
         };
         // Assuming we build a geode robot at every minute, we can use the Gauss formula
         // to get a (very rough) upper bound for the total number of geodes we can harvest.
+        // TODO: Is this correct? What if there already is more than one geode robot farming?
+        //       Should we check for that?
         let geode_minutes = self.remaining_minutes - minutes_to_geode_robot;
         let harvested = (geode_minutes + 1) * geode_minutes;
         self.materials.geode + harvested
@@ -264,7 +267,7 @@ impl State {
                 let mut max_geodes: usize = 0;
                 for child in self.childs(blueprint) {
                     // Prune the tree by skipping node with a worse estimate than our current maximum
-                    if child.upper_bound_for_geodes() > max_geodes {
+                    if child.upper_bound_for_geodes(blueprint) > max_geodes {
                         max_geodes = max_geodes.max(child.dfs_geodes(blueprint, memo));
                     }
                 }
