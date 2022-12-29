@@ -89,15 +89,6 @@ impl<T> IndexMut<Material> for Materials<T> {
 }
 
 impl<T> Materials<T> {
-    fn map<U>(self, f: impl Fn(T) -> U) -> Materials<U> {
-        Materials {
-            ore: f(self.ore),
-            clay: f(self.clay),
-            obsidian: f(self.obsidian),
-            geode: f(self.geode),
-        }
-    }
-
     fn zip<U, V>(self, rhs: Materials<U>, f: impl Fn(T, U) -> V) -> Materials<V> {
         Materials {
             ore: f(self.ore, rhs.ore),
