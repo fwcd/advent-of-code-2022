@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut}, fmt, iter, array};
 
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -19,15 +19,15 @@ struct Materials<T> {
     geode: T,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Default, Clone, Copy)]
 struct Robot {
-    material: Material,
+    material: Option<Material>,
     costs: Materials<usize>,
 }
 
 #[derive(Debug, Clone)]
 struct Blueprint {
-    robots: Vec<Robot>,
+    robots: Materials<Robot>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -114,8 +114,17 @@ impl<T> AddAssign for Materials<T> where T: AddAssign {
     }
 }
 
-impl From<HashMap<Material, usize>> for Materials<usize> {
-    fn from(map: HashMap<Material, usize>) -> Self {
+impl<T> IntoIterator for Materials<T> {
+    type IntoIter = array::IntoIter<T, 4>;
+    type Item = T;
+
+    fn into_iter(self) -> Self::IntoIter {
+        [self.ore, self.clay, self.obsidian, self.geode].into_iter()
+    }
+}
+
+impl<T> From<HashMap<Material, T>> for Materials<T> where T: Clone + Default {
+    fn from(map: HashMap<Material, T>) -> Self {
         Self {
             ore: map.get(&Material::Ore).cloned().unwrap_or_default(),
             clay: map.get(&Material::Clay).cloned().unwrap_or_default(),
@@ -133,7 +142,7 @@ impl FromStr for Robot {
         const COST_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+) (\w+)").unwrap());
 
         let captures = PATTERN.captures(s).ok_or_else(|| format!("Could not parse '{}'", s))?;
-        let material = captures.name("name").unwrap().as_str().parse()?;
+        let material = Some(captures.name("name").unwrap().as_str().parse()?);
         let raw_costs = captures.name("raw_costs").unwrap();
         let costs = COST_PATTERN.captures_iter(raw_costs.as_str())
             .map(|c| Ok((c[2].parse()?, c[1].parse().unwrap())))
@@ -152,7 +161,9 @@ impl FromStr for Blueprint {
             .last().unwrap()
             .split(".")
             .filter_map(|r| r.parse().ok())
-            .collect::<Vec<_>>();
+            .map(|r: Robot| (r.material.unwrap(), r))
+            .collect::<HashMap<Material, Robot>>()
+            .into();
         Ok(Blueprint { robots })
     }
 }
@@ -193,14 +204,14 @@ impl State {
         }
         next.step();
         if let Some(robot) = robot {
-            next.robots[robot.material] += 1;
+            next.robots[robot.material.unwrap()] += 1;
         }
         Some(next)
     }
 
     fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
         iter::once(self.next(None))
-            .chain(blueprint.robots.iter().map(|r| self.next(Some(r))))
+            .chain(blueprint.robots.into_iter().map(|r| self.next(Some(&r))))
             .flatten()
     }
 
