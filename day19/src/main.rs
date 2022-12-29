@@ -105,6 +105,22 @@ impl Materials<bool> {
     }
 }
 
+impl<T> Add for Materials<T> where T: Add {
+    type Output = Materials<T::Output>;
+
+    fn add(self, rhs: Self) -> Self::Output {
+        self.zip(rhs, Add::add)
+    }
+}
+
+impl<T> Sub for Materials<T> where T: Sub {
+    type Output = Materials<T::Output>;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        self.zip(rhs, Sub::sub)
+    }
+}
+
 impl<T> AddAssign for Materials<T> where T: AddAssign {
     fn add_assign(&mut self, rhs: Self) {
         self.ore += rhs.ore;
