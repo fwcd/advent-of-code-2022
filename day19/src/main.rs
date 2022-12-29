@@ -207,10 +207,17 @@ impl State {
         Some(next)
     }
 
-    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl ParallelIterator<Item = Self> + 'a {
-        rayon::iter::once(self.next(None))
-            .chain(blueprint.robots.par_iter().map(|r| self.next(Some(r))))
+    fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
+        iter::once(self.next(None))
+            .chain(blueprint.robots.iter().map(|r| self.next(Some(r))))
             .flatten()
+    }
+
+    fn upper_bound_for_geodes(&self) -> usize {
+        // Assuming we build a geode robot at every minute, we can use the Gauss formula
+        // to get a (very rough) upper bound for the total number of geodes we can harvest.
+        let harvested = self.remaining_minutes * (self.remaining_minutes + 1);
+        self.materials.geode + harvested
     }
 
     fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
@@ -223,10 +230,14 @@ impl State {
             let geodes = if self.remaining_minutes == 0 {
                 self.materials.geode
             } else {
-                self.childs(blueprint)
-                    .map(|c| c.dfs_geodes(blueprint, memo))
-                    .max()
-                    .unwrap_or(0)
+                let mut max_geodes: usize = 0;
+                for child in self.childs(blueprint) {
+                    // Prune the tree by skipping node with a worse estimate than our current maximum
+                    if child.upper_bound_for_geodes() > max_geodes {
+                        max_geodes = max_geodes.max(child.dfs_geodes(blueprint, memo));
+                    }
+                }
+                max_geodes
             };
             memo.insert(*self, geodes);
             geodes
@@ -246,6 +257,10 @@ struct Args {
     /// The path to the input file.
     #[arg(short, long, default_value = "resources/demo.txt")]
     input: String,
+
+    /// Only runs the first blueprint of part 1 (for debugging).
+    #[arg(long, default_value_t = false)]
+    smoke: bool,
 
     /// The number of minutes to search deep for part 1.
     #[arg(short, long, default_value_t = 24)]
@@ -279,16 +294,17 @@ fn main() {
     
     if !args.skip_part1 {
         let part1 = blueprints.par_iter().enumerate()
+            .take(if args.smoke { 1 } else { blueprints.len() })
             .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes, args.cache_size))
             .sum::<usize>();
 
         println!("Part 1: {}", part1);
     }
 
-    if !args.skip_part2 {
-        let part2 = blueprints.par_iter().enumerate()
+    if !args.skip_part2 && !args.smoke {
+        let part2 = blueprints.par_iter()
             .take(3)
-            .map(|(_, b)| b.max_geodes(args.part2_minutes, args.cache_size))
+            .map(|b| b.max_geodes(args.part2_minutes, args.cache_size))
             .product::<usize>();
 
         println!("Part 2: {}", part2);
