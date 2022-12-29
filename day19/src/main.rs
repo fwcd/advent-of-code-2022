@@ -216,7 +216,7 @@ impl State {
     fn upper_bound_for_geodes(&self) -> usize {
         // Assuming we build a geode robot at every minute, we can use the Gauss formula
         // to get a (very rough) upper bound for the total number of geodes we can harvest.
-        let harvested = self.remaining_minutes * (self.remaining_minutes + 1);
+        let harvested = (self.remaining_minutes + 1) * self.remaining_minutes;
         self.materials.geode + harvested
     }
 
@@ -271,7 +271,7 @@ struct Args {
     part2_minutes: usize,
 
     /// The number of cache entries per thread.
-    #[arg(short, long, default_value_t = 80_000_000)]
+    #[arg(short, long, default_value_t = 60_000_000)]
     cache_size: usize,
 
     /// Whether to skip part 1.
