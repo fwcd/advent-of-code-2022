@@ -1,5 +1,16 @@
 :- use_module(library(dcg/basics)).
 
+% Equation and expression handling
+
+lookup_expr(Var, [eqn(Var, Expr)|_], Expr) :- !.
+lookup_expr(Var, [_|Eqns], Expr) :- lookup_expr(Var, Eqns, Expr).
+
+build_tree(Root, Eqns, const(X)) :- lookup_expr(Root, Eqns, const(X)), !.
+build_tree(Root, Eqns, bin_op(LhsNode, Op, RhsNode)) :-
+  lookup_expr(Root, Eqns, bin_op(Lhs, Op, Rhs)),
+  build_tree(Lhs, Eqns, LhsNode),
+  build_tree(Rhs, Eqns, RhsNode).
+
 % DCG for parsing the input
 
 dcg_eqns([])     --> eos, !.
@@ -28,5 +39,6 @@ println(X) :-
 
 main :-
   parse_input(Eqns),
+  build_tree(root, Eqns, Tree),
 
-  println(Eqns).
+  println(Tree).
