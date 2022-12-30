@@ -79,5 +79,9 @@
   {
     "lang": "clike",
     "path": "day20/src/day20.m"
+  },
+  {
+    "lang": "prolog",
+    "path": "day21/day21.pl"
   }
 ]
