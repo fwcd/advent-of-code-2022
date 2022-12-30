@@ -376,9 +376,13 @@ fn main() {
     }
 
     if !args.skip_part2 && !args.smoke {
-        let part2 = blueprints.par_iter()
+        let part2 = blueprints.par_iter().enumerate()
             .take(args.part2_blueprints)
-            .map(|b| b.max_geodes(args.part2_minutes, args.print_depth))
+            .map(|(i, b)| {
+                let geodes = b.max_geodes(args.part2_minutes, args.print_depth);
+                println!("Max geodes for {}. blueprint from part 2: {}", i + 1, geodes);
+                geodes
+            })
             .product::<usize>();
 
         println!("Part 2: {}", part2);
