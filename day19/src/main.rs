@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut, Sub, Add}, fmt, iter, array};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut, Sub, Add}, fmt::{self, format}, iter, array};
 
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -286,7 +286,8 @@ impl State {
 
     fn dfs_geodes(&self, blueprint: &Blueprint, print_depth: usize) -> usize {
         if self.elapsed_minutes < print_depth {
-            println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
+            let indent = iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>();
+            println!("{}{:02}: (robots: {}, materials: {})", indent, self.elapsed_minutes, self.robots, self.materials);
         }
         if self.remaining_minutes == 0 {
             self.materials.geode
