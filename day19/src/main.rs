@@ -28,6 +28,7 @@ struct Robot {
 #[derive(Debug, Clone)]
 struct Blueprint {
     robots: Materials<Robot>,
+    max_costs: Materials<usize>,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -180,7 +181,7 @@ impl FromStr for Blueprint {
             .map(|r: Robot| (r.material.unwrap(), r))
             .collect::<HashMap<Material, Robot>>()
             .into();
-        Ok(Blueprint { robots })
+        Ok(Blueprint::new(robots))
     }
 }
 
@@ -225,37 +226,52 @@ impl State {
         Some(next)
     }
 
+    fn should_build(&self, robot: &Robot, blueprint: &Blueprint) -> bool {
+        // Skip building the robot if we already produce enough of this resource per minute
+        let material = robot.material.unwrap();
+        material == Material::Geode || self.robots[material] <= blueprint.max_costs[material]
+    }
+
     fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
         iter::once(self.next(None))
-            .chain(blueprint.robots.into_iter().map(|r| self.next(Some(&r))))
+            .chain(blueprint.robots.into_iter()
+                .filter(|r| self.should_build(r, blueprint))
+                .map(|r| self.next(Some(&r))))
             .flatten()
     }
 
-    fn upper_bound_for_geodes(&self, blueprint: &Blueprint) -> usize {
-        // There is a minimum number of minutes until (even without considering the
-        // material costs) we could possibly have a geode robot. This value is
-        // determined by our maximum 'robot level'.
-        let minutes_to_geode_robot = if self.robots.geode > 0 {
-            0
-        } else if self.robots.obsidian > 0 {
-            1
-        } else if self.robots.clay > 0 {
-            2
-        } else {
-            let min_costs = blueprint.robots.ore.costs.ore.min(blueprint.robots.clay.costs.ore) / self.robots.ore;
-            3 + min_costs.max(self.materials.ore) - self.materials.ore
-        };
-        // Assuming we build a geode robot at every minute, we can use the Gauss formula
-        // to get a (very rough) upper bound for the total number of geodes we can harvest.
-        // TODO: Is this correct? What if there already is more than one geode robot farming?
-        //       Should we check for that?
-        let geode_minutes = self.remaining_minutes - minutes_to_geode_robot;
-        let harvested = (geode_minutes + 1) * geode_minutes;
-        self.materials.geode + harvested
+    fn upper_bound_for_geodes(&self, _blueprint: &Blueprint) -> usize {
+        // // There is a minimum number of minutes until (even without considering the
+        // // material costs) we could possibly have a geode robot. This value is
+        // // determined by our maximum 'robot level'.
+
+        // let minutes_to_geode_robot = if self.robots.geode > 0 {
+        //     0
+        // } else if self.robots.obsidian > 0 {
+        //     1
+        // } else if self.robots.clay > 0 {
+        //     2
+        // } else {
+        //     3
+        // };
+
+        // // Assuming we build a geode robot at every minute, we can use the Gauss formula
+        // // to get a (very rough) upper bound for the total number of geodes we can harvest
+        // // by computing
+        // //
+        // //     robot_count + (robot_count + 1) + ... + (robot_count + geode_minutes)
+        // //
+
+        // let geode_minutes = self.remaining_minutes - minutes_to_geode_robot;
+        // let robot_count = self.robots.geode;
+        // let harvested = robot_count * (geode_minutes + 1) + (geode_minutes * (geode_minutes + 1)) / 2;
+
+        // self.materials.geode + harvested
+        usize::MAX // DEBUG
     }
 
     fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
-        if self.elapsed_minutes < 10 {
+        if self.elapsed_minutes < 6 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
         if let Some(geodes) = memo.get(self) {
@@ -266,7 +282,6 @@ impl State {
             } else {
                 let mut max_geodes: usize = 0;
                 for child in self.childs(blueprint) {
-                    // Prune the tree by skipping node with a worse estimate than our current maximum
                     if child.upper_bound_for_geodes(blueprint) > max_geodes {
                         max_geodes = max_geodes.max(child.dfs_geodes(blueprint, memo));
                     }
@@ -280,6 +295,15 @@ impl State {
 }
 
 impl Blueprint {
+    fn new(robots: Materials<Robot>) -> Self {
+        let max_costs = robots.into_iter()
+            .map(|r| r.costs)
+            .reduce(|c1, c2| c1.zip(c2, Ord::max))
+            .unwrap_or_default();
+
+        Self { robots, max_costs }
+    }
+
     fn max_geodes(&self, remaining_minutes: usize, cache_size: usize) -> usize {
         let mut memo = Cache::new(cache_size);
         State::new(remaining_minutes).dfs_geodes(self, &mut memo)
