@@ -37,6 +37,8 @@ struct State {
     materials: Materials<usize>,
     remaining_minutes: usize,
     elapsed_minutes: usize,
+    last_robot: Option<Material>,
+    last_materials: Materials<usize>,
 }
 
 type Memo = Cache<State, usize>;
@@ -103,6 +105,12 @@ impl<T> Materials<T> {
 impl Materials<bool> {
     fn all(self) -> bool {
         self.ore && self.clay && self.obsidian && self.geode
+    }
+}
+
+impl Materials<usize> {
+    fn can_spend(self, deltas: Self) -> bool {
+        self.zip(deltas, |c, d| c >= d).all()
     }
 }
 
@@ -192,6 +200,8 @@ impl State {
             materials: Materials::default(),
             remaining_minutes,
             elapsed_minutes: 0,
+            last_robot: Some(Material::Ore),
+            last_materials: Materials::default(),
         }
     }
 
@@ -203,10 +213,6 @@ impl State {
         self.elapsed_minutes += 1;
     }
 
-    fn can_spend(&self, deltas: Materials<usize>) -> bool {
-        self.materials.zip(deltas, |c, d| c >= d).all()
-    }
-
     fn spend(&mut self, deltas: Materials<usize>) {
         self.materials = self.materials.zip(deltas, |c, d| c - d);
     }
@@ -214,14 +220,17 @@ impl State {
     fn next(&self, robot: Option<&Robot>) -> Option<Self> {
         let mut next = *self;
         if let Some(robot) = robot {
-            if !self.can_spend(robot.costs) {
+            if !self.materials.can_spend(robot.costs) {
                 return None;
             }
             next.spend(robot.costs);
         }
         next.step();
+        next.last_robot = robot.and_then(|r| r.material);
+        next.last_materials = self.materials;
         if let Some(robot) = robot {
-            next.robots[robot.material.unwrap()] += 1;
+            let material = robot.material.unwrap();
+            next.robots[material] += 1;
         }
         Some(next)
     }
@@ -229,7 +238,16 @@ impl State {
     fn should_build(&self, robot: &Robot, blueprint: &Blueprint) -> bool {
         // Skip building the robot if we already produce enough of this resource per minute
         let material = robot.material.unwrap();
-        material == Material::Geode || self.robots[material] <= blueprint.max_costs[material]
+        if material != Material::Geode && self.robots[material] > blueprint.max_costs[material] {
+            return false;
+        }
+
+        // Skip building the robot if we decided to skip the last round despite being able to afford it
+        if self.last_robot.is_none() && self.last_materials.can_spend(robot.costs) {
+            return false;
+        }
+
+        true
     }
 
     fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
