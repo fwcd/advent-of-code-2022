@@ -345,7 +345,7 @@ struct Args {
     part2_minutes: usize,
 
     /// The maximum number of blueprints to use (from the beginning) for part 2.
-    #[arg(short, long, default_value_t = usize::MAX)]
+    #[arg(short, long, default_value_t = 3)]
     part2_blueprints: usize,
 
     /// Whether to skip part 1.
