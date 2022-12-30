@@ -263,12 +263,12 @@ impl State {
             .flatten()
     }
 
-    fn upper_bound_for_geodes(&self) -> usize {
+    fn minimum_minutes_to_geode_robot(&self) -> usize {
         // There is a minimum number of minutes until (even without considering the
         // material costs) we could possibly have a geode robot. This value is
         // determined by our maximum 'robot level'.
 
-        let minutes_to_geode_robot = if self.robots.geode > 0 {
+        if self.robots.geode > 0 {
             0
         } else if self.robots.obsidian > 0 {
             1
@@ -276,20 +276,7 @@ impl State {
             2
         } else {
             3
-        };
-
-        // Assuming we build a geode robot at every minute, we can use the Gauss formula
-        // to get a (very rough) upper bound for the total number of geodes we can harvest
-        // by computing
-        //
-        //     robot_count + (robot_count + 1) + ... + (robot_count + geode_minutes)
-        //
-
-        let geode_minutes = self.remaining_minutes - minutes_to_geode_robot;
-        let robot_count = self.robots.geode;
-        let harvested = (robot_count * (robot_count + 1) + (geode_minutes * (geode_minutes + 1))) / 2;
-
-        self.materials.geode + harvested
+        }
     }
 
     fn dfs_geodes(&self, blueprint: &Blueprint, print_depth: usize) -> usize {
@@ -301,8 +288,11 @@ impl State {
             self.materials.geode
         } else {
             let mut max_geodes: usize = 0;
+            let mut min_minutes_to_geode: usize = usize::MAX;
             for child in self.childs(blueprint) {
-                if child.upper_bound_for_geodes() > max_geodes {
+                let minutes_to_geode = child.minimum_minutes_to_geode_robot();
+                if minutes_to_geode <= min_minutes_to_geode {
+                    min_minutes_to_geode = minutes_to_geode;
                     max_geodes = max_geodes.max(child.dfs_geodes(blueprint, print_depth));
                 }
             }
