@@ -11,6 +11,14 @@ build_tree(Root, Eqns, bin_op(LhsNode, Op, RhsNode)) :-
   build_tree(Lhs, Eqns, LhsNode),
   build_tree(Rhs, Eqns, RhsNode).
 
+eval(X, plus, Y, Z) :- Z is X + Y, !.
+eval(X, minus, Y, Z) :- Z is X - Y, !.
+eval(X, times, Y, Z) :- Z is X * Y, !.
+eval(X, div, Y, Z) :- Z is X / Y, !.
+
+eval_tree(const(X), X) :- !.
+eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z), !.
+
 % DCG for parsing the input
 
 dcg_eqns([])     --> eos, !.
@@ -32,7 +40,7 @@ dcg_op(div) --> "/", !.
 % Main program
 
 parse_input(Eqns) :-
-  phrase_from_file(dcg_eqns(Eqns), 'resources/demo.txt').
+  phrase_from_file(dcg_eqns(Eqns), 'resources/input.txt').
 
 println(X) :-
   print(X), nl.
@@ -40,5 +48,6 @@ println(X) :-
 main :-
   parse_input(Eqns),
   build_tree(root, Eqns, Tree),
+  eval_tree(Tree, Part1),
 
-  println(Tree).
+  println(Part1).
