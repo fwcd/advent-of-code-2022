@@ -319,7 +319,7 @@ impl Blueprint {
 #[derive(Parser)]
 struct Args {
     /// The path to the input file.
-    #[arg(short, long, default_value = "resources/demo.txt")]
+    #[arg(short, long, default_value = "resources/input.txt")]
     input: String,
 
     /// How many minutes deep the DFS results should be printed.
