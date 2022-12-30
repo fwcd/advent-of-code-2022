@@ -323,9 +323,17 @@ struct Args {
     #[arg(short, long, default_value_t = 24)]
     part1_minutes: usize,
 
+    /// The maximum number of blueprints to use (from the beginning) for part 1.
+    #[arg(short, long, default_value_t = usize::MAX)]
+    part1_blueprints: usize,
+
     /// The number of minutes to search deep for part 2.
     #[arg(short, long, default_value_t = 32)]
     part2_minutes: usize,
+
+    /// The maximum number of blueprints to use (from the beginning) for part 2.
+    #[arg(short, long, default_value_t = usize::MAX)]
+    part2_blueprints: usize,
 
     /// The number of cache entries per thread.
     #[arg(short, long, default_value_t = 60_000_000)]
@@ -351,7 +359,7 @@ fn main() {
     
     if !args.skip_part1 {
         let part1 = blueprints.par_iter().enumerate()
-            .take(if args.smoke { 1 } else { blueprints.len() })
+            .take(if args.smoke { 1 } else { args.part1_blueprints })
             .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes, args.cache_size))
             .sum::<usize>();
 
@@ -360,7 +368,7 @@ fn main() {
 
     if !args.skip_part2 && !args.smoke {
         let part2 = blueprints.par_iter()
-            .take(3)
+            .take(args.part2_blueprints)
             .map(|b| b.max_geodes(args.part2_minutes, args.cache_size))
             .product::<usize>();
 
