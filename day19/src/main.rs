@@ -1,4 +1,4 @@
-use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut, Sub, Add}, fmt::{self, format}, iter, array};
+use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexMut, Sub, Add}, fmt, iter, array};
 
 use clap::Parser;
 use once_cell::sync::Lazy;
@@ -323,7 +323,7 @@ struct Args {
     input: String,
 
     /// How many minutes deep the DFS results should be printed.
-    #[arg(long, default_value_t = 10)]
+    #[arg(long, default_value_t = 0)]
     print_depth: usize,
 
     /// Only runs the first blueprint of part 1 (for debugging).
