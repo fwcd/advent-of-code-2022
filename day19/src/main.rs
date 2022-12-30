@@ -234,8 +234,11 @@ impl State {
 
     fn should_build(&self, robot: &Robot, blueprint: &Blueprint) -> bool {
         // Don't build a robot in the last minute.
-        if self.remaining_minutes == 1 {
-            return false;
+        match (self.remaining_minutes, robot.material) {
+            (1, _)
+          | (2, Some(Material::Ore | Material::Clay | Material::Obsidian))
+          | (3, Some(Material::Clay)) => return false,
+            _ => {},
         }
 
         // Skip building the robot if we already produce enough of this resource per minute
