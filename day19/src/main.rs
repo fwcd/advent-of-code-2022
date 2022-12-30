@@ -233,6 +233,11 @@ impl State {
     }
 
     fn should_build(&self, robot: &Robot, blueprint: &Blueprint) -> bool {
+        // Don't build a robot in the last minute.
+        if self.remaining_minutes == 1 {
+            return false;
+        }
+
         // Skip building the robot if we already produce enough of this resource per minute
         let material = robot.material.unwrap();
         if material != Material::Geode && self.robots[material] > blueprint.max_costs[material] {
