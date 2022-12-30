@@ -2,7 +2,6 @@ use std::{fs, collections::HashMap, str::FromStr, ops::{AddAssign, Index, IndexM
 
 use clap::Parser;
 use once_cell::sync::Lazy;
-use quick_cache::sync::Cache;
 use rayon::prelude::*;
 use regex::Regex;
 
@@ -40,8 +39,6 @@ struct State {
     last_robot: Option<Material>,
     last_materials: Materials<usize>,
 }
-
-type Memo = Cache<State, usize>;
 
 impl FromStr for Material {
     type Err = String;
@@ -287,26 +284,20 @@ impl State {
         self.materials.geode + harvested
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint, memo: &Memo) -> usize {
+    fn dfs_geodes(&self, blueprint: &Blueprint) -> usize {
         if self.elapsed_minutes < 6 {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
-        if let Some(geodes) = memo.get(self) {
-            geodes
+        if self.remaining_minutes == 0 {
+            self.materials.geode
         } else {
-            let geodes = if self.remaining_minutes == 0 {
-                self.materials.geode
-            } else {
-                let mut max_geodes: usize = 0;
-                for child in self.childs(blueprint) {
-                    if child.upper_bound_for_geodes() > max_geodes {
-                        max_geodes = max_geodes.max(child.dfs_geodes(blueprint, memo));
-                    }
+            let mut max_geodes: usize = 0;
+            for child in self.childs(blueprint) {
+                if child.upper_bound_for_geodes() > max_geodes {
+                    max_geodes = max_geodes.max(child.dfs_geodes(blueprint));
                 }
-                max_geodes
-            };
-            memo.insert(*self, geodes);
-            geodes
+            }
+            max_geodes
         }
     }
 }
@@ -321,9 +312,8 @@ impl Blueprint {
         Self { robots, max_costs }
     }
 
-    fn max_geodes(&self, remaining_minutes: usize, cache_size: usize) -> usize {
-        let mut memo = Cache::new(cache_size);
-        State::new(remaining_minutes).dfs_geodes(self, &mut memo)
+    fn max_geodes(&self, remaining_minutes: usize) -> usize {
+        State::new(remaining_minutes).dfs_geodes(self)
     }
 }
 
@@ -353,10 +343,6 @@ struct Args {
     #[arg(short, long, default_value_t = usize::MAX)]
     part2_blueprints: usize,
 
-    /// The number of cache entries per thread.
-    #[arg(short, long, default_value_t = 60_000_000)]
-    cache_size: usize,
-
     /// Whether to skip part 1.
     #[arg(long, default_value_t = false)]
     skip_part1: bool,
@@ -378,7 +364,7 @@ fn main() {
     if !args.skip_part1 {
         let part1 = blueprints.par_iter().enumerate()
             .take(if args.smoke { 1 } else { args.part1_blueprints })
-            .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes, args.cache_size))
+            .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes))
             .sum::<usize>();
 
         println!("Part 1: {}", part1);
@@ -387,7 +373,7 @@ fn main() {
     if !args.skip_part2 && !args.smoke {
         let part2 = blueprints.par_iter()
             .take(args.part2_blueprints)
-            .map(|b| b.max_geodes(args.part2_minutes, args.cache_size))
+            .map(|b| b.max_geodes(args.part2_minutes))
             .product::<usize>();
 
         println!("Part 2: {}", part2);
