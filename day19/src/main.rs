@@ -284,8 +284,8 @@ impl State {
         self.materials.geode + harvested
     }
 
-    fn dfs_geodes(&self, blueprint: &Blueprint) -> usize {
-        if self.elapsed_minutes < 6 {
+    fn dfs_geodes(&self, blueprint: &Blueprint, print_depth: usize) -> usize {
+        if self.elapsed_minutes < print_depth {
             println!("{}. (robots: {}, materials: {})", iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>(), self.robots, self.materials);
         }
         if self.remaining_minutes == 0 {
@@ -294,7 +294,7 @@ impl State {
             let mut max_geodes: usize = 0;
             for child in self.childs(blueprint) {
                 if child.upper_bound_for_geodes() > max_geodes {
-                    max_geodes = max_geodes.max(child.dfs_geodes(blueprint));
+                    max_geodes = max_geodes.max(child.dfs_geodes(blueprint, print_depth));
                 }
             }
             max_geodes
@@ -312,8 +312,8 @@ impl Blueprint {
         Self { robots, max_costs }
     }
 
-    fn max_geodes(&self, remaining_minutes: usize) -> usize {
-        State::new(remaining_minutes).dfs_geodes(self)
+    fn max_geodes(&self, remaining_minutes: usize, print_depth: usize) -> usize {
+        State::new(remaining_minutes).dfs_geodes(self, print_depth)
     }
 }
 
@@ -322,6 +322,10 @@ struct Args {
     /// The path to the input file.
     #[arg(short, long, default_value = "resources/demo.txt")]
     input: String,
+
+    /// How many minutes deep the DFS results should be printed.
+    #[arg(long, default_value_t = 10)]
+    print_depth: usize,
 
     /// Only runs the first blueprint of part 1 (for debugging).
     #[arg(long, default_value_t = false)]
@@ -364,7 +368,7 @@ fn main() {
     if !args.skip_part1 {
         let part1 = blueprints.par_iter().enumerate()
             .take(if args.smoke { 1 } else { args.part1_blueprints })
-            .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes))
+            .map(|(i, b)| (i + 1) * b.max_geodes(args.part1_minutes, args.print_depth))
             .sum::<usize>();
 
         println!("Part 1: {}", part1);
@@ -373,7 +377,7 @@ fn main() {
     if !args.skip_part2 && !args.smoke {
         let part2 = blueprints.par_iter()
             .take(args.part2_blueprints)
-            .map(|b| b.max_geodes(args.part2_minutes))
+            .map(|b| b.max_geodes(args.part2_minutes, args.print_depth))
             .product::<usize>();
 
         println!("Part 2: {}", part2);
