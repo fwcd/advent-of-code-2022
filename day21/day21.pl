@@ -1,5 +1,13 @@
 :- use_module(library(dcg/basics)).
 
+% +---------+
+% | Helpers |
+% +---------+
+
+% Concatenates a list of strings.
+join([], "") :- !.
+join([Str|Strs], Result) :- join(Strs, Rest), string_concat(Str, Rest, Result).
+
 % +----------------------------------------------------------------+
 % | Part 1: Assemble the equation list into a tree and evaluate it |
 % +----------------------------------------------------------------+
@@ -25,6 +33,26 @@ eval(X, div, Y, Z) :- Z is X / Y, !.
 eval_tree(const(X), X) :- !.
 eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z), !.
 
+% Converts the given operator to a prettyprinted string.
+pretty_op(plus, "+").
+pretty_op(minus, "-").
+pretty_op(times, "*").
+pretty_op(div, "/").
+
+% Converts the given expression to a prettyprinted string.
+pretty_tree(const(X), XStr) :- number_string(X, XStr), !.
+pretty_tree(bin_op(Lhs, Op, Rhs), Str) :-
+  pretty_tree(Lhs, LhsStr),
+  pretty_op(Op, OpStr),
+  pretty_tree(Rhs, RhsStr),
+  join(["(", LhsStr, ") ", OpStr, " (", RhsStr, ")"], Str).
+
+% Converts the given equation to a prettyprinted string.
+pretty_eqn(eqn(Lhs, Rhs), Str) :-
+  pretty_tree(Lhs, LhsStr),
+  pretty_tree(Rhs, RhsStr),
+  join([LhsStr, " = ", RhsStr], Str).
+
 % +----------------------------------------------------------+
 % | Part 2: Transform the tree into an equation and solve it |
 % +----------------------------------------------------------+
@@ -46,7 +74,9 @@ simplify_eqn(Eqn, Eqn).
 % Solves the equation for Var, assuming Var is located in the left-hand side of the equation.
 solve_in_lhs(Var, eqn(Var, Rhs), Rhs) :- !.
 solve_in_lhs(Var, OpEqn, Solution) :-
-  println(OpEqn),
+  pretty_eqn(OpEqn, OpEqnStr),
+  println(OpEqnStr),
+
   simplify_eqn(OpEqn, eqn(bin_op(OpLhs, Op, OpRhs), Rhs)), 
   inverse(Op, InvOp),
   (
