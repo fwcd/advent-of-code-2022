@@ -98,7 +98,7 @@ solve_in_lhs(Var, eqn(named(_, bin_op(OpLhs, Op, OpRhs)), Rhs), Solution) :-
     );
     (
       % Var is in OpRhs and Op is - or /
-      solve_in_lhs(Var, eqn(OpRhs, bin_op(OpLhs, InvOp, Rhs)), Solution)
+      solve_in_lhs(Var, eqn(OpRhs, bin_op(OpLhs, Op, Rhs)), Solution)
     )     
   ).
 
@@ -133,7 +133,7 @@ dcg_op(div) --> "/", !.
 % +--------------+
 
 parse_input(Eqns) :-
-  phrase_from_file(dcg_eqns(Eqns), 'resources/demo.txt').
+  phrase_from_file(dcg_eqns(Eqns), 'resources/input.txt').
 
 println(X) :-
   print(X), nl.
