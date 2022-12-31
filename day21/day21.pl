@@ -27,12 +27,12 @@ build_tree(Root, Eqns, named(Var, bin_op(Lhs, Op, Rhs))) :-
 eval(X, plus, Y, Z) :- Z is X + Y, !.
 eval(X, minus, Y, Z) :- Z is X - Y, !.
 eval(X, times, Y, Z) :- Z is X * Y, !.
-eval(X, div, Y, Z) :- Z is X rdiv Y, !.
+eval(X, div, Y, Z) :- Z is X rdiv Y.
 
 % Evaluates the given expression tree.
 eval_tree(const(X), X) :- !.
 eval_tree(named(_, Expr), X) :- eval_tree(Expr, X), !.
-eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z), !.
+eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z).
 
 % Strips name nodes from the given expression tree.
 strip_tree(named(_, Expr), StrippedExpr) :- strip_tree(Expr, StrippedExpr), !.
@@ -143,10 +143,10 @@ main :-
   build_tree(root, Eqns, Tree),
 
   eval_tree(Tree, Part1),
-  println(Part1),
+  write('Part 1: '), println(Part1),
   
   part1_tree_to_part2_eqn(Tree, Eqn),
   solve_for(humn, Eqn, SolutionTree),
 
   eval_tree(SolutionTree, Part2),
-  println(Part2).
+  write('Part 2: '), println(Part2).
