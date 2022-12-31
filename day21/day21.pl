@@ -17,9 +17,9 @@ lookup_expr(Var, [eqn(Var, Expr)|_], Expr) :- !.
 lookup_expr(Var, [_|Eqns], Expr) :- lookup_expr(Var, Eqns, Expr).
 
 % Assembles the given equation list to a tree with the given variable as root.
-build_tree(Root, Eqns, const(X)) :- lookup_expr(Root, Eqns, const(X)), !.
-build_tree(Root, Eqns, bin_op(Lhs, Op, Rhs)) :-
-  lookup_expr(Root, Eqns, bin_op(LhsVar, Op, RhsVar)),
+build_tree(Root, Eqns, named(Var, const(X))) :- lookup_expr(Root, Eqns, named(Var, const(X))), !.
+build_tree(Root, Eqns, named(Var, bin_op(Lhs, Op, Rhs))) :-
+  lookup_expr(Root, Eqns, named(Var, bin_op(LhsVar, Op, RhsVar))),
   build_tree(LhsVar, Eqns, Lhs),
   build_tree(RhsVar, Eqns, Rhs).
 
@@ -31,6 +31,7 @@ eval(X, div, Y, Z) :- Z is X / Y, !.
 
 % Evaluates the given expression tree.
 eval_tree(const(X), X) :- !.
+eval_tree(named(_, Expr), X) :- eval_tree(Expr, X), !.
 eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z), !.
 
 % Converts the given operator to a prettyprinted string.
@@ -41,6 +42,10 @@ pretty_op(div, "/").
 
 % Converts the given expression to a prettyprinted string.
 pretty_tree(const(X), XStr) :- number_string(X, XStr), !.
+pretty_tree(named(Var, Expr), Str) :-
+  pretty_tree(Expr, ExprStr),
+  atom_string(Var, VarStr),
+  join([VarStr, "[", ExprStr, "]"], Str).
 pretty_tree(bin_op(Lhs, Op, Rhs), Str) :-
   pretty_tree(Lhs, LhsStr),
   pretty_op(Op, OpStr),
@@ -64,24 +69,15 @@ inverse(times, div).
 inverse(div, times).
 
 % Transforms the part 1-style expression tree to a part 2-style equation.
-part1_tree_to_part2_eqn(bin_op(Lhs, _, Rhs), eqn(Lhs, Rhs)).
-
-% Simplifies the top-level binary operation of an equation to only use + or *
-simplify_eqn(eqn(bin_op(OpLhs, minus, OpRhs), Rhs), eqn(bin_op(Rhs, plus,  OpRhs), OpLhs)) :- !.
-simplify_eqn(eqn(bin_op(OpLhs, div,   OpRhs), Rhs), eqn(bin_op(Rhs, times, OpRhs), OpLhs)) :- !.
-simplify_eqn(Eqn, Eqn).
+part1_tree_to_part2_eqn(named(root, bin_op(Lhs, _, Rhs)), eqn(Lhs, Rhs)).
 
 % Solves the equation for Var, assuming Var is located in the left-hand side of the equation.
-solve_in_lhs(Var, eqn(Var, Rhs), Rhs) :- !.
-solve_in_lhs(Var, OpEqn, Solution) :-
-  pretty_eqn(OpEqn, OpEqnStr),
-  println(OpEqnStr),
-
-  simplify_eqn(OpEqn, eqn(bin_op(OpLhs, Op, OpRhs), Rhs)), 
+solve_in_lhs(Var, eqn(named(Var, _), Rhs), Rhs) :- !.
+solve_in_lhs(Var, eqn(named(_, bin_op(OpLhs, Op, OpRhs)), Rhs), Solution) :-
   inverse(Op, InvOp),
   (
     (solve_in_lhs(Var, eqn(OpLhs, bin_op(Rhs, InvOp, OpRhs)), Solution), !); % Var is in OpLhs
-    (solve_in_lhs(Var, eqn(OpRhs, bin_op(Rhs, InvOp, OpLhs)), Solution))     % Var is in OpRhs
+    (solve_in_lhs(Var, eqn(OpRhs, bin_op(OpLhs, InvOp, Rhs)), Solution))     % Var is in OpRhs
   ).
 
 % Solves the equation for Var, regardless of which side of the equation Var is located in.
@@ -97,7 +93,7 @@ solve_for(Var, eqn(Lhs, Rhs), Solution) :-
 dcg_eqns([])     --> eos, !.
 dcg_eqns([E|Es]) --> dcg_eqn(E), dcg_eqns(Es).
 
-dcg_eqn(eqn(Res, Expr)) --> dcg_var(Res), ": ", dcg_expr(Expr), !.
+dcg_eqn(eqn(Res, named(Res, Expr))) --> dcg_var(Res), ": ", dcg_expr(Expr), !.
 
 dcg_expr(const(X)) --> number(X), eol, !.
 dcg_expr(bin_op(LhsVar, Op, RhsVar)) --> dcg_var(LhsVar), " ", dcg_op(Op), " ", dcg_var(RhsVar), eol, !.
@@ -124,9 +120,14 @@ main :-
   parse_input(Eqns),
   build_tree(root, Eqns, Tree),
 
+  pretty_tree(Tree, TreeStr),
+  println(TreeStr),
+
   eval_tree(Tree, Part1),
   println(Part1),
   
   part1_tree_to_part2_eqn(Tree, Eqn),
-  solve_for(root, Eqn, Part2),
+  solve_for(humn, Eqn, SolutionTree),
+
+  eval_tree(SolutionTree, Part2),
   println(Part2).
