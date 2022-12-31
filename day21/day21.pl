@@ -73,6 +73,10 @@ inverse(minus, plus).
 inverse(times, div).
 inverse(div, times).
 
+% Checks whether the operator is + or *.
+positive_op(plus).
+positive_op(times).
+
 % Transforms the part 1-style expression tree to a part 2-style equation.
 part1_tree_to_part2_eqn(named(root, bin_op(Lhs, _, Rhs)), eqn(Lhs, Rhs)).
 
@@ -81,8 +85,21 @@ solve_in_lhs(Var, eqn(named(Var, _), Rhs), Rhs) :- !.
 solve_in_lhs(Var, eqn(named(_, bin_op(OpLhs, Op, OpRhs)), Rhs), Solution) :-
   inverse(Op, InvOp),
   (
-    (solve_in_lhs(Var, eqn(OpLhs, bin_op(Rhs, InvOp, OpRhs)), Solution), !); % Var is in OpLhs
-    (solve_in_lhs(Var, eqn(OpRhs, bin_op(OpLhs, InvOp, Rhs)), Solution))     % Var is in OpRhs
+    (
+      % Var is in OpLhs
+      solve_in_lhs(Var, eqn(OpLhs, bin_op(Rhs, InvOp, OpRhs)), Solution),
+      !
+    ); 
+    (
+      % Var is in OpRhs and Op is + or *
+      positive_op(Op),
+      !,
+      solve_in_lhs(Var, eqn(OpRhs, bin_op(Rhs, InvOp, OpLhs)), Solution)
+    );
+    (
+      % Var is in OpRhs and Op is - or /
+      solve_in_lhs(Var, eqn(OpRhs, bin_op(OpLhs, InvOp, Rhs)), Solution)
+    )     
   ).
 
 % Solves the equation for Var, regardless of which side of the equation Var is located in.
@@ -124,10 +141,6 @@ println(X) :-
 main :-
   parse_input(Eqns),
   build_tree(root, Eqns, Tree),
-
-  strip_tree(Tree, StrippedTree),
-  pretty_tree(StrippedTree, StrippedTreeStr),
-  println(StrippedTreeStr),
 
   eval_tree(Tree, Part1),
   println(Part1),
