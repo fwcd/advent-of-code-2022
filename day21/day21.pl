@@ -34,6 +34,11 @@ eval_tree(const(X), X) :- !.
 eval_tree(named(_, Expr), X) :- eval_tree(Expr, X), !.
 eval_tree(bin_op(Lhs, Op, Rhs), Z) :- eval_tree(Lhs, X), eval_tree(Rhs, Y), eval(X, Op, Y, Z), !.
 
+% Strips name nodes from the given expression tree.
+strip_tree(named(_, Expr), StrippedExpr) :- strip_tree(Expr, StrippedExpr), !.
+strip_tree(const(X), const(X)) :- !.
+strip_tree(bin_op(Lhs, Op, Rhs), bin_op(StrippedLhs, Op, StrippedRhs)) :- strip_tree(Lhs, StrippedLhs), strip_tree(Rhs, StrippedRhs).
+
 % Converts the given operator to a prettyprinted string.
 pretty_op(plus, "+").
 pretty_op(minus, "-").
@@ -120,8 +125,9 @@ main :-
   parse_input(Eqns),
   build_tree(root, Eqns, Tree),
 
-  pretty_tree(Tree, TreeStr),
-  println(TreeStr),
+  strip_tree(Tree, StrippedTree),
+  pretty_tree(StrippedTree, StrippedTreeStr),
+  println(StrippedTreeStr),
 
   eval_tree(Tree, Part1),
   println(Part1),
