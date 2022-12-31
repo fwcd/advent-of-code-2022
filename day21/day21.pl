@@ -27,7 +27,7 @@ build_tree(Root, Eqns, named(Var, bin_op(Lhs, Op, Rhs))) :-
 eval(X, plus, Y, Z) :- Z is X + Y, !.
 eval(X, minus, Y, Z) :- Z is X - Y, !.
 eval(X, times, Y, Z) :- Z is X * Y, !.
-eval(X, div, Y, Z) :- Z is X / Y, !.
+eval(X, div, Y, Z) :- Z is X rdiv Y, !.
 
 % Evaluates the given expression tree.
 eval_tree(const(X), X) :- !.
