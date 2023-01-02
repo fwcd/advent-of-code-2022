@@ -16,10 +16,12 @@ enum Field: Character, Hashable {
 }
 
 struct Vec2: Hashable, CustomStringConvertible {
-  var x: Int
-  var y: Int
+  var x: Int = 0
+  var y: Int = 0
 
   var description: String { "(\(x), \(y))" }
+
+  static var zero = Self()
 
   static func +(lhs: Self, rhs: Self) -> Self {
     Self(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
@@ -39,9 +41,11 @@ struct Vec2: Hashable, CustomStringConvertible {
 }
 
 struct Vec3: Hashable, CustomStringConvertible {
-  var x: Int
-  var y: Int
-  var z: Int
+  var x: Int = 0
+  var y: Int = 0
+  var z: Int = 0
+
+  static var zero = Self()
 
   var description: String { "(\(x), \(y), \(z))" }
 
@@ -59,6 +63,13 @@ struct Mat3: Hashable, CustomStringConvertible {
     "(\(e0), \(e1), \(e2))"
   }
 
+  var botRightToTopLeft2x2: Self {
+    Self(
+      e0: Vec3(x: e1.y, y: e1.z, z: 0),
+      e1: Vec3(x: e2.y, y: e1.z, z: 0),
+      e2: Vec3(x:    0, y:    0, z: 1)
+    )
+  }
   var transpose: Self {
     Self(
       e0: Vec3(x: e0.x, y: e1.x, z: e2.x),
@@ -131,9 +142,9 @@ enum Direction: Int, Hashable, CaseIterable {
 
   var rotation: Mat3 {
     switch self {
-    case .right: return .rotZ
+    case .right: return .rotZ.transpose
     case .down: return .rotY
-    case .left: return .rotZ.transpose
+    case .left: return .rotZ
     case .up: return .rotY.transpose
     }
   }
@@ -155,6 +166,15 @@ extension Vec2 {
     case .right: self.init(x:  1, y:  0)
     case .down:  self.init(x:  0, y:  1)
     }
+  }
+}
+
+extension Direction {
+  init?(_ vec2: Vec2) {
+    guard let direction = Self.allCases.first(where: { Vec2($0) == vec2 }) else {
+      return nil
+    }
+    self = direction
   }
 }
 
@@ -199,7 +219,7 @@ class Fields {
 
     /// Construct a cube map by performing a DFS on the unrolled cube net.
     func constructCubeMap(mapPos: Vec2, cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
-      var queue = Deque([(mapPos: mapPos, cubeRotation: cubeRotation)])
+      var queue: Deque<(mapPos: Vec2, cubeRotation: Mat3, origin: Direction?)> = [(mapPos: mapPos, cubeRotation: cubeRotation, origin: nil)]
       while let node = queue.popFirst() {
         let position = node.mapPos * cubeSize
         guard position.y >= 0 && position.y < rows.count,
@@ -207,9 +227,9 @@ class Fields {
               rows[position.y][position.x] != .border else { continue }
         if !cubeMap.keys.contains(node.mapPos) {
           cubeMap[node.mapPos] = node.cubeRotation
-          print(node.cubeRotation)
+          print(node.mapPos, node.cubeRotation, node.origin)
           for direction in Direction.allCases {
-            queue.append((mapPos: node.mapPos + Vec2(direction), cubeRotation: direction.rotation * node.cubeRotation))
+            queue.append((mapPos: node.mapPos + Vec2(direction), cubeRotation: node.cubeRotation * direction.rotation, origin: direction))
           }
         }
       }
@@ -224,7 +244,7 @@ class Fields {
 protocol WrapperProtocol {
   init(fields: Fields, position: Vec2, facing: Direction)
 
-  func wrap(current: Vec2, next: Vec2) -> Vec2
+  func wrap(current: Vec2, next: inout Vec2, facing: inout Direction)
 }
 
 struct Board: CustomStringConvertible {
@@ -255,7 +275,8 @@ struct Board: CustomStringConvertible {
       let wrapper = Wrapper(fields: fields, position: position, facing: facing)
       loop:
       for _ in 0..<tiles {
-        let next = wrapper.wrap(current: position, next: position + Vec2(facing))
+        var next = position + Vec2(facing)
+        wrapper.wrap(current: position, next: &next, facing: &facing)
         let row = fields.rows[next.y]
         switch row[min(row.count - 1, next.x)] {
           case .space: position = next
@@ -290,11 +311,9 @@ struct Part1Wrapper: WrapperProtocol {
     colRange = fields.columns[position.x].boardRange
   }
 
-  func wrap(current: Vec2, next: Vec2) -> Vec2 {
-    var next = next
+  func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
     next.x = rowRange.wrap(next.x)
     next.y = colRange.wrap(next.y)
-    return next
   }
 }
 
@@ -307,29 +326,22 @@ struct Part2Wrapper: WrapperProtocol {
     rotation = facing.rotation
   }
 
-  func wrap(current: Vec2, next: Vec2) -> Vec2 {
+  func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
     let rowRange = fields.rows[next.y].boardRange
     let colRange = fields.columns[next.x].boardRange
-    guard !rowRange.contains(next.y) || !colRange.contains(next.x) else { return next }
+    guard !rowRange.contains(next.y) || !colRange.contains(next.x) else { return }
     let mapPos = current / fields.cubeSize
     guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
-    let nextRotation = rotation * cubeRotation
-    var axisChangeOfBasis = Mat3.identity
-    axisChangeOfBasis.e0 = nextRotation.e0
-    let rotationAroundNormal = axisChangeOfBasis * nextRotation * axisChangeOfBasis.transpose
-    var flatRotation = Mat3.identity
-    var additionalRotation = Mat3.identity
-    for _ in 0..<4 {
-      let totalRotation = additionalRotation * nextRotation
-      if let nextMapPos = fields.cubeMap.first(where: { $0.value == totalRotation })?.key {
-        let baseIntraPos = next - ((next / fields.cubeSize) * fields.cubeSize)
-        let nextIntraPos = Vec2(flatRotation * Vec3(baseIntraPos))
-        return (nextMapPos * fields.cubeSize) + nextIntraPos
-      }
-      additionalRotation = rotationAroundNormal * additionalRotation
-      flatRotation = nextRotation * flatRotation
-    }
-    fatalError("No aligned rotation of \(nextRotation) was mapped (cube map: \(fields.cubeMap))")
+    let nextUnalignedRotation = cubeRotation * rotation
+    let cubeNormal = nextUnalignedRotation.e0
+    assert(cubeNormal != .zero)
+    guard let (nextMapPos, nextCubeRotation) = fields.cubeMap.first(where: { $0.value.e0 == cubeNormal }) else { fatalError("No aligned rotation for cube normal \(cubeNormal) (cube map: \(fields.cubeMap))") }
+    let baseIntraPos = next - ((next / fields.cubeSize) * fields.cubeSize)
+    let totalRotation: Mat3 = (nextCubeRotation * nextUnalignedRotation.transpose).botRightToTopLeft2x2
+    let nextIntraPos = Vec2(totalRotation * Vec3(baseIntraPos))
+    next = (nextMapPos * fields.cubeSize) + nextIntraPos
+    guard let nextFacing = Direction(Vec2(totalRotation * Vec3(Vec2(facing)))) else { fatalError("Could not compute next facing") }
+    facing = nextFacing
   }
 }
 
