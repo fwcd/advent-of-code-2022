@@ -87,23 +87,23 @@ struct Mat3: Hashable, CustomStringConvertible {
   }
   static var rotX: Self {
     Self(
-      e0: Vec3(x: 1, y: 0, z:  0),
-      e1: Vec3(x: 0, y: 0, z: -1),
-      e2: Vec3(x: 0, y: 1, z:  0)
+      e0: Vec3(x: 1, y:  0, z: 0),
+      e1: Vec3(x: 0, y:  0, z: 1),
+      e2: Vec3(x: 0, y: -1, z: 0)
     )
   }
   static var rotY: Self {
     Self(
-      e0: Vec3(x:  0, y: 0, z: 1),
-      e1: Vec3(x:  0, y: 1, z: 0),
-      e2: Vec3(x: -1, y: 0, z: 0)
+      e0: Vec3(x: 0, y: 0, z: -1),
+      e1: Vec3(x: 0, y: 1, z:  0),
+      e2: Vec3(x: 1, y: 0, z:  0)
     )
   }
   static var rotZ: Self {
     Self(
-      e0: Vec3(x: 0, y: -1, z: 0),
-      e1: Vec3(x: 1, y:  0, z: 0),
-      e2: Vec3(x: 0, y:  0, z: 1)
+      e0: Vec3(x:  0, y: 1, z: 0),
+      e1: Vec3(x: -1, y: 0, z: 0),
+      e2: Vec3(x:  0, y: 0, z: 1)
     )
   }
 
@@ -142,10 +142,10 @@ enum Direction: Int, Hashable, CaseIterable {
 
   var rotation: Mat3 {
     switch self {
-    case .right: return .rotZ.transpose
-    case .down: return .rotY
-    case .left: return .rotZ
-    case .up: return .rotY.transpose
+    case .right: return .rotZ
+    case .down: return .rotY.transpose
+    case .left: return .rotZ.transpose
+    case .up: return .rotY
     }
   }
 
