@@ -54,7 +54,9 @@ struct Mat3: Hashable, CustomStringConvertible {
   var e1: Vec3
   var e2: Vec3
 
-  var description: String { "(\(e0), \(e1), \(e2))" }
+  var description: String {
+    "(\(e0), \(e1), \(e2))"
+  }
 
   var transpose: Self {
     Self(
@@ -128,9 +130,9 @@ enum Direction: Int, Hashable, CaseIterable {
 
   var rotation: Mat3 {
     switch self {
-    case .right: return .rotX
+    case .right: return .rotZ
     case .down: return .rotY
-    case .left: return .rotX.transpose
+    case .left: return .rotZ.transpose
     case .up: return .rotY.transpose
     }
   }
@@ -195,10 +197,11 @@ class Fields {
     self.columns = columns
 
     /// Construct a cube map by performing a DFS on the unrolled cube net.
-    func constructCubeMap(mapPos: Vec2 = .init(x: 0, y: 0), cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
+    func constructCubeMap(mapPos: Vec2, cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
       let position = mapPos * cubeSize
-      guard position.x >= 0 && position.x < columns.count,
-            position.y >= 0 && position.y < rows.count else { return }
+      guard position.y >= 0 && position.y < rows.count,
+            position.x >= 0 && position.x < rows[position.y].count,
+            rows[position.y][position.x] != .border else { return }
       if !cubeMap.keys.contains(mapPos) {
         cubeMap[mapPos] = cubeRotation
         for direction in Direction.allCases {
@@ -208,7 +211,7 @@ class Fields {
     }
 
     var cubeMap: [Vec2: Mat3] = [:]
-    constructCubeMap(cubeMap: &cubeMap)
+    constructCubeMap(mapPos: rows[0].enumerated().first { $0.element != .border }.map { Vec2(x: $0.offset, y: 0) / cubeSize }!, cubeMap: &cubeMap)
     self.cubeMap = cubeMap
   }
 }
@@ -306,14 +309,20 @@ struct Part2Wrapper: WrapperProtocol {
     let mapPos = current / fields.cubeSize
     guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
     let nextRotation = rotation * cubeRotation
-    var rotationDelta = Mat3.identity
+    var axisChangeOfBasis = Mat3.identity
+    axisChangeOfBasis.e0 = nextRotation.e0
+    let rotationAroundNormal = axisChangeOfBasis * nextRotation * axisChangeOfBasis.transpose
+    var flatRotation = Mat3.identity
+    var additionalRotation = Mat3.identity
     for _ in 0..<4 {
-      if let nextMapPos = fields.cubeMap.first(where: { $0.value == rotationDelta * nextRotation })?.key {
+      let totalRotation = additionalRotation * nextRotation
+      if let nextMapPos = fields.cubeMap.first(where: { $0.value == totalRotation })?.key {
         let baseIntraPos = next - ((next / fields.cubeSize) * fields.cubeSize)
-        let nextIntraPos = Vec2(rotationDelta * Vec3(baseIntraPos))
+        let nextIntraPos = Vec2(flatRotation * Vec3(baseIntraPos))
         return (nextMapPos * fields.cubeSize) + nextIntraPos
       }
-      rotationDelta = .rotZ * rotationDelta
+      additionalRotation = rotationAroundNormal * additionalRotation
+      flatRotation = nextRotation * flatRotation
     }
     fatalError("No aligned rotation of \(nextRotation) was mapped (cube map: \(fields.cubeMap))")
   }
@@ -326,11 +335,11 @@ extension Board {
   }
 }
 
-let url = URL(fileURLWithPath: "Resources/input.txt")
+let url = URL(fileURLWithPath: "Resources/demo.txt")
 let input = String(data: try Data(contentsOf: url), encoding: .utf8)!
 let rawParts = input.split(separator: "\n\n")
 
-let cubeSize = 50
+let cubeSize = 4
 let board = Board(rawFields: Array(rawParts[0].split(separator: "\n").map(Array.init)), cubeSize: cubeSize)
 let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { match -> Instruction in
   let output = match.output
