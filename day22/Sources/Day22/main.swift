@@ -27,34 +27,31 @@ struct Vec2: Hashable {
   }
 }
 
-func dot(_ lhs: (Int, Int, Int), _ rhs: (Int, Int, Int)) -> Int {
-  lhs.0 * rhs.0 + lhs.1 * rhs.1 + lhs.2 * rhs.2
+struct Vec3: Hashable {
+  var x: Int
+  var y: Int
+  var z: Int
+
+  func dot(_ rhs: Self) -> Int {
+    x * rhs.x + y * rhs.y + z * rhs.z
+  }
 }
 
 struct Mat3: Hashable {
-  var x0, x1, x2: Int
-  var y0, y1, y2: Int
-  var z0, z1, z2: Int
+  var e0: Vec3
+  var e1: Vec3
+  var e2: Vec3
 
-  var x: (Int, Int, Int) { (x0, x1, x2) }
-  var y: (Int, Int, Int) { (y0, y1, y2) }
-  var z: (Int, Int, Int) { (z0, z1, z2) }
-
-  var transposed: Self {
-    Self(
-      x0: x.0, x1: y.0, x2: z.0,
-      y0: x.1, y1: y.1, y2: z.1,
-      z0: x.2, z1: y.2, z2: z.2
+  static func *(lhs: Self, rhs: Vec3) -> Vec3 {
+    Vec3(
+      x: Vec3(x: lhs.e0.x, y: lhs.e1.x, z: lhs.e2.x).dot(rhs),
+      y: Vec3(x: lhs.e0.y, y: lhs.e1.y, z: lhs.e2.y).dot(rhs),
+      z: Vec3(x: lhs.e0.z, y: lhs.e1.z, z: lhs.e2.z).dot(rhs)
     )
   }
 
   static func *(lhs: Self, rhs: Self) -> Self {
-    let rhsT = rhs.transposed
-    return Self(
-      x0: dot(lhs.x, rhsT.x), x1: dot(lhs.x, rhsT.y), x2: dot(lhs.x, rhsT.z),
-      y0: dot(lhs.y, rhsT.x), y1: dot(lhs.y, rhsT.y), y2: dot(lhs.y, rhsT.z),
-      z0: dot(lhs.z, rhsT.x), z1: dot(lhs.z, rhsT.y), z2: dot(lhs.z, rhsT.z)
-    )
+    Self(e0: lhs * rhs.e0, e1: lhs * rhs.e1, e2: lhs * rhs.e2)
   }
 }
 
@@ -116,18 +113,21 @@ extension Range where Bound == Int {
   }
 }
 
-struct Fields {
+class Fields {
   let rows: [[Field]]
-  lazy private(set) var columns: [[Field]] = {
+  let columns: [[Field]]
+
+  init(rows: [[Field]]) {
+    self.rows = rows
     let width = rows.map(\.count).max() ?? 0
-    return (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
-  }()
+    columns = (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
+  }
 }
 
 protocol WrapperProtocol {
-  init(fields: Fields, position: Vec2)
+  init(fields: Fields, position: Vec2, facing: Direction)
 
-  mutating func wrap(next: Vec2) -> Vec2
+  func wrap(next: Vec2) -> Vec2
 }
 
 struct Board: CustomStringConvertible {
@@ -155,7 +155,7 @@ struct Board: CustomStringConvertible {
   mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
     switch instruction {
     case .tiles(let tiles):
-      var wrapper = Wrapper(fields: fields, position: position)
+      let wrapper = Wrapper(fields: fields, position: position, facing: facing)
       loop:
       for _ in 0..<tiles {
         let next = wrapper.wrap(next: position + Vec2(facing))
@@ -184,15 +184,36 @@ struct Board: CustomStringConvertible {
 
 struct Part1Wrapper: WrapperProtocol {
   var fields: Fields
-  var position: Vec2
+  var rowRange: Range<Int>
+  var colRange: Range<Int>
 
-  mutating func wrap(next: Vec2) -> Vec2 {
-    let rowRange = fields.rows[position.y].boardRange
-    let colRange = fields.columns[position.x].boardRange
+  init(fields: Fields, position: Vec2, facing: Direction) {
+    self.fields = fields
+    rowRange = fields.rows[position.y].boardRange
+    colRange = fields.columns[position.x].boardRange
+  }
+
+  func wrap(next: Vec2) -> Vec2 {
     var next = next
     next.x = rowRange.wrap(next.x)
     next.y = colRange.wrap(next.y)
     return next
+  }
+}
+
+struct Part2Wrapper: WrapperProtocol {
+  private static let cubeSize = 50
+
+  private let fields: Fields
+  private let cubeMap: [Vec2: Vec3]
+
+  init(fields: Fields, position: Vec2, facing: Direction) {
+    self.fields = fields
+    cubeMap = [:] // TODO
+  }
+
+  func wrap(next: Vec2) -> Vec2 {
+    fatalError("TODO")
   }
 }
 
