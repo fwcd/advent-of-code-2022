@@ -27,6 +27,37 @@ struct Vec2: Hashable {
   }
 }
 
+func dot(_ lhs: (Int, Int, Int), _ rhs: (Int, Int, Int)) -> Int {
+  lhs.0 * rhs.0 + lhs.1 * rhs.1 + lhs.2 * rhs.2
+}
+
+struct Mat3: Hashable {
+  var x0, x1, x2: Int
+  var y0, y1, y2: Int
+  var z0, z1, z2: Int
+
+  var x: (Int, Int, Int) { (x0, x1, x2) }
+  var y: (Int, Int, Int) { (y0, y1, y2) }
+  var z: (Int, Int, Int) { (z0, z1, z2) }
+
+  var transposed: Self {
+    Self(
+      x0: x.0, x1: y.0, x2: z.0,
+      y0: x.1, y1: y.1, y2: z.1,
+      z0: x.2, z1: y.2, z2: z.2
+    )
+  }
+
+  static func *(lhs: Self, rhs: Self) -> Self {
+    let rhsT = rhs.transposed
+    return Self(
+      x0: dot(lhs.x, rhsT.x), x1: dot(lhs.x, rhsT.y), x2: dot(lhs.x, rhsT.z),
+      y0: dot(lhs.y, rhsT.x), y1: dot(lhs.y, rhsT.y), y2: dot(lhs.y, rhsT.z),
+      z0: dot(lhs.z, rhsT.x), z1: dot(lhs.z, rhsT.y), z2: dot(lhs.z, rhsT.z)
+    )
+  }
+}
+
 enum Direction: Int, Hashable, CaseIterable {
   case right = 0
   case down
@@ -63,51 +94,6 @@ extension Vec2 {
     case .right: self.init(x:  1, y:  0)
     case .down:  self.init(x:  0, y:  1)
     }
-  }
-}
-
-enum Axis: Int, Hashable, CaseIterable {
-  case x = 0
-  case y
-  case z
-
-  var leftRightAxis: Axis {
-    switch self {
-    case .x, .z: return .y
-    case .y:     return .z
-    }
-  }
-  var upDownAxis: Axis {
-    switch self {
-    case .x:     return .z
-    case .y, .z: return .x
-    }
-  }
-}
-
-struct CubeFace: Hashable {
-  var axis: Axis
-  var up: Bool
-
-  static func +(lhs: Self, rhs: Direction) -> Self {
-    switch rhs {
-    case .left:  return lhs.rotating(around: lhs.axis.leftRightAxis, delta: -1)
-    case .right: return lhs.rotating(around: lhs.axis.leftRightAxis, delta:  1)
-    case .up:    return lhs.rotating(around: lhs.axis.upDownAxis,    delta: -1)
-    case .down:  return lhs.rotating(around: lhs.axis.upDownAxis,    delta:  1)
-    }
-  }
-
-  func rotating(around rotationAxis: Axis, delta: Int) -> Self {
-    func swapBits(_ x: Int) -> Int {
-      ((x & 1) << 1) | ((x >> 1) & 1)
-    }
-    let axes = Axis.allCases.filter { $0 != rotationAxis }
-    let axisIndex = axes.firstIndex(of: axis)!
-    let upIndex = up ? 1 : 0
-    let encodedCurrent = (axisIndex << 1) | upIndex
-    let encodedNext = swapBits((swapBits(encodedCurrent) + delta) %% 4)
-    return Self(axis: axes[(encodedNext >> 1) & 1], up: (encodedNext & 1) == 1)
   }
 }
 
@@ -214,3 +200,4 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
 
 let finalBoard = instructions.reduce(board) { $0.performing(instruction: $1) }
 print("Part 1: \(finalBoard.password)")
+
