@@ -105,6 +105,15 @@ enum Direction: Int, Hashable, CaseIterable {
     }
   }
 
+  var rotation: Mat3 {
+    switch self {
+    case .right: return .rotX
+    case .down: return .rotY
+    case .left: return .rotX.transpose
+    case .up: return .rotY.transpose
+    }
+  }
+
   static func +(lhs: Self, rhs: Self) -> Self {
     Self(rawValue: (lhs.rawValue + rhs.rawValue + 1) % Self.allCases.count)!
   }
@@ -161,10 +170,9 @@ class Fields {
             position.y >= 0 && position.y < rows.count else { return }
       if !cubeMap.keys.contains(mapPos) {
         cubeMap[mapPos] = cubeNormal
-        constructCubeMap(mapPos: mapPos + Vec2(x:  0, y:  1), cubeNormal: .rotX * cubeNormal, cubeMap: &cubeMap)
-        constructCubeMap(mapPos: mapPos + Vec2(x:  0, y: -1), cubeNormal: .rotX.transpose * cubeNormal, cubeMap: &cubeMap)
-        constructCubeMap(mapPos: mapPos + Vec2(x:  1, y:  0), cubeNormal: .rotY * cubeNormal, cubeMap: &cubeMap)
-        constructCubeMap(mapPos: mapPos + Vec2(x: -1, y:  0), cubeNormal: .rotY.transpose * cubeNormal, cubeMap: &cubeMap)
+        for direction in Direction.allCases {
+          constructCubeMap(mapPos: mapPos + Vec2(direction), cubeNormal: direction.rotation * cubeNormal, cubeMap: &cubeMap)
+        }
       }
     }
 
@@ -256,6 +264,7 @@ struct Part2Wrapper: WrapperProtocol {
 
   init(fields: Fields, position: Vec2, facing: Direction) {
     self.fields = fields
+    
   }
 
   func wrap(next: Vec2) -> Vec2 {
