@@ -77,8 +77,16 @@ extension Range where Bound == Int {
   }
 }
 
+struct Fields {
+  let rows: [[Field]]
+  lazy private(set) var columns: [[Field]] = {
+    let width = rows.map(\.count).max() ?? 0
+    return (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
+  }()
+}
+
 struct Board: CustomStringConvertible {
-  var fields: [[Field]]
+  var fields: Fields
   var position: Vec2 {
     willSet {
       track[position] = facing
@@ -87,17 +95,11 @@ struct Board: CustomStringConvertible {
   var facing: Direction = .right
   var track: [Vec2: Direction] = [:]
 
-  var transposed: Board {
-    var t = self
-    let width = fields.map(\.count).max() ?? 0
-    t.fields = (0..<width).map { x in fields.map { x < $0.count ? $0[x] : .border } }
-    return t
-  }
   var password: Int {
     1000 * (position.y + 1) + 4 * (position.x + 1) + facing.rawValue
   }
   var description: String {
-    fields
+    fields.rows
       .enumerated()
       .map { (y, row) in String(row.enumerated().map { (x, f) in
         track[Vec2(x: x, y: y)]?.arrow ?? f.rawValue
@@ -108,14 +110,14 @@ struct Board: CustomStringConvertible {
   mutating func perform(instruction: Instruction) {
     switch instruction {
     case .tiles(let tiles):
-      let rowRange = fields[position.y].boardRange
-      let colRange = transposed.fields[position.x].boardRange
+      let rowRange = fields.rows[position.y].boardRange
+      let colRange = fields.columns[position.x].boardRange
       loop:
       for _ in 0..<tiles {
         var next = position + Vec2(facing)
         next.x = rowRange.wrap(next.x)
         next.y = colRange.wrap(next.y)
-        let row = fields[next.y]
+        let row = fields.rows[next.y]
         switch row[min(row.count - 1, next.x)] {
           case .space: position = next
           case .solid: break loop
@@ -136,8 +138,8 @@ struct Board: CustomStringConvertible {
 
 extension Board {
   init(rawFields: [[Character]]) {
-    fields = rawFields.map { $0.map { Field(rawValue: $0)! } }
-    position = Vec2(x: fields[0].firstIndex { $0 != .border }!, y: 0)
+    fields = Fields(rows: rawFields.map { $0.map { Field(rawValue: $0)! } })
+    position = Vec2(x: fields.rows[0].firstIndex { $0 != .border }!, y: 0)
   }
 }
 
