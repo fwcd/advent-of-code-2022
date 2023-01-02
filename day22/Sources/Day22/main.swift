@@ -42,12 +42,39 @@ struct Mat3: Hashable {
   var e1: Vec3
   var e2: Vec3
 
-  static func *(lhs: Self, rhs: Vec3) -> Vec3 {
-    Vec3(
-      x: Vec3(x: lhs.e0.x, y: lhs.e1.x, z: lhs.e2.x).dot(rhs),
-      y: Vec3(x: lhs.e0.y, y: lhs.e1.y, z: lhs.e2.y).dot(rhs),
-      z: Vec3(x: lhs.e0.z, y: lhs.e1.z, z: lhs.e2.z).dot(rhs)
+  var transpose: Self {
+    Self(
+      e0: Vec3(x: e0.x, y: e1.x, z: e2.x),
+      e1: Vec3(x: e0.y, y: e1.y, z: e2.y),
+      e2: Vec3(x: e0.z, y: e1.z, z: e2.z)
     )
+  }
+
+  static var rotX: Self {
+    Self(
+      e0: Vec3(x: 1, y: 0, z:  0),
+      e1: Vec3(x: 0, y: 0, z: -1),
+      e2: Vec3(x: 0, y: 1, z:  0)
+    )
+  }
+  static var rotY: Self {
+    Self(
+      e0: Vec3(x:  0, y: 0, z: 1),
+      e1: Vec3(x:  0, y: 1, z: 0),
+      e2: Vec3(x: -1, y: 0, z: 0)
+    )
+  }
+  static var rotZ: Self {
+    Self(
+      e0: Vec3(x: 0, y: -1, z: 0),
+      e1: Vec3(x: 1, y:  0, z: 0),
+      e2: Vec3(x: 0, y:  0, z: 1)
+    )
+  }
+
+  static func *(lhs: Self, rhs: Vec3) -> Vec3 {
+    let t = lhs.transpose
+    return Vec3(x: t.e0.dot(rhs), y: t.e1.dot(rhs), z: t.e2.dot(rhs))
   }
 
   static func *(lhs: Self, rhs: Self) -> Self {
@@ -114,13 +141,36 @@ extension Range where Bound == Int {
 }
 
 class Fields {
+  private static let cubeSize = 50
+
   let rows: [[Field]]
   let columns: [[Field]]
+  let cubeMap: [Vec2: Vec3]
 
   init(rows: [[Field]]) {
     self.rows = rows
     let width = rows.map(\.count).max() ?? 0
-    columns = (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
+
+    let columns = (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
+    self.columns = columns
+
+    /// Construct a cube map by performing a DFS on the unrolled cube net.
+    func constructCubeMap(mapPos: Vec2 = .init(x: 0, y: 0), cubeNormal: Vec3 = .init(x: 1, y: 0, z: 0), cubeMap: inout [Vec2: Vec3]) {
+      let position = mapPos * Self.cubeSize
+      guard position.x >= 0 && position.x < columns.count,
+            position.y >= 0 && position.y < rows.count else { return }
+      if !cubeMap.keys.contains(mapPos) {
+        cubeMap[mapPos] = cubeNormal
+        constructCubeMap(mapPos: mapPos + Vec2(x:  0, y:  1), cubeNormal: .rotX * cubeNormal, cubeMap: &cubeMap)
+        constructCubeMap(mapPos: mapPos + Vec2(x:  0, y: -1), cubeNormal: .rotX.transpose * cubeNormal, cubeMap: &cubeMap)
+        constructCubeMap(mapPos: mapPos + Vec2(x:  1, y:  0), cubeNormal: .rotY * cubeNormal, cubeMap: &cubeMap)
+        constructCubeMap(mapPos: mapPos + Vec2(x: -1, y:  0), cubeNormal: .rotY.transpose * cubeNormal, cubeMap: &cubeMap)
+      }
+    }
+
+    var cubeMap: [Vec2: Vec3] = [:]
+    constructCubeMap(cubeMap: &cubeMap)
+    self.cubeMap = cubeMap
   }
 }
 
@@ -202,14 +252,10 @@ struct Part1Wrapper: WrapperProtocol {
 }
 
 struct Part2Wrapper: WrapperProtocol {
-  private static let cubeSize = 50
-
   private let fields: Fields
-  private let cubeMap: [Vec2: Vec3]
 
   init(fields: Fields, position: Vec2, facing: Direction) {
     self.fields = fields
-    cubeMap = [:] // TODO
   }
 
   func wrap(next: Vec2) -> Vec2 {
