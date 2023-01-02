@@ -90,7 +90,7 @@ struct Board: CustomStringConvertible {
   var transposed: Board {
     var t = self
     let width = fields.map(\.count).max() ?? 0
-    t.fields = (0..<width).map { x in fields.map { $0[min(x, $0.count - 1)] } }
+    t.fields = (0..<width).map { x in fields.map { x < $0.count ? $0[x] : .border } }
     return t
   }
   var password: Int {
@@ -158,5 +158,4 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
 }
 
 let finalBoard = instructions.reduce(board) { $0.performing(instruction: $1) }
-print(finalBoard)
 print("Part 1: \(finalBoard.password)")
