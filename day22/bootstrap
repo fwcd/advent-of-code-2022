@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -e
+cd "$(dirname $0)"
+
+echo "==> Installing Swift via Swiftenv..."
+git clone --depth 1 https://github.com/kylef/swiftenv.git ~/.swiftenv
+PATH="$HOME/.swiftenv/bin:$PATH"
+swiftenv rehash
+swiftenv install 5.7

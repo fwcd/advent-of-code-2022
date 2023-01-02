@@ -83,5 +83,9 @@
   {
     "lang": "prolog",
     "path": "day21/day21.pl"
+  },
+  {
+    "lang": "swift",
+    "path": "day22/Sources/Day22/main.swift"
   }
 ]
