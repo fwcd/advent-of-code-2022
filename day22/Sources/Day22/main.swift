@@ -281,7 +281,7 @@ struct Board: CustomStringConvertible {
         switch row[min(row.count - 1, next.x)] {
           case .space: position = next
           case .solid: break loop
-          case .border: fatalError("Unreachable")
+          case .border: fatalError("Cannot move to border position \(next)")
         }
       }
     case .turn(let turn):
