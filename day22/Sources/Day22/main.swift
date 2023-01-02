@@ -124,6 +124,12 @@ struct Fields {
   }()
 }
 
+protocol WrapperProtocol {
+  init(fields: Fields, position: Vec2)
+
+  mutating func wrap(next: Vec2) -> Vec2
+}
+
 struct Board: CustomStringConvertible {
   var fields: Fields
   var position: Vec2 {
@@ -146,16 +152,13 @@ struct Board: CustomStringConvertible {
       .joined(separator: "\n")
   }
 
-  mutating func perform(instruction: Instruction) {
+  mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
     switch instruction {
     case .tiles(let tiles):
-      let rowRange = fields.rows[position.y].boardRange
-      let colRange = fields.columns[position.x].boardRange
+      var wrapper = Wrapper(fields: fields, position: position)
       loop:
       for _ in 0..<tiles {
-        var next = position + Vec2(facing)
-        next.x = rowRange.wrap(next.x)
-        next.y = colRange.wrap(next.y)
+        let next = wrapper.wrap(next: position + Vec2(facing))
         let row = fields.rows[next.y]
         switch row[min(row.count - 1, next.x)] {
           case .space: position = next
@@ -168,9 +171,27 @@ struct Board: CustomStringConvertible {
     }
   }
 
-  func performing(instruction: Instruction) -> Self {
+  func performing<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) -> Self {
     var next = self
-    next.perform(instruction: instruction)
+    next.perform(instruction: instruction, with: wrapperType)
+    return next
+  }
+
+  func performing<Wrapper: WrapperProtocol>(instructions: [Instruction], with wrapperType: Wrapper.Type) -> Self {
+    instructions.reduce(self) { $0.performing(instruction: $1, with: wrapperType) }
+  }
+}
+
+struct Part1Wrapper: WrapperProtocol {
+  var fields: Fields
+  var position: Vec2
+
+  mutating func wrap(next: Vec2) -> Vec2 {
+    let rowRange = fields.rows[position.y].boardRange
+    let colRange = fields.columns[position.x].boardRange
+    var next = next
+    next.x = rowRange.wrap(next.x)
+    next.y = colRange.wrap(next.y)
     return next
   }
 }
@@ -198,6 +219,5 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
   }
 }
 
-let finalBoard = instructions.reduce(board) { $0.performing(instruction: $1) }
-print("Part 1: \(finalBoard.password)")
+print("Part 1: \(board.performing(instructions: instructions, with: Part1Wrapper.self).password)")
 
