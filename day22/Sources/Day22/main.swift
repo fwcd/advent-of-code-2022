@@ -22,8 +22,16 @@ struct Vec2: Hashable {
     Self(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
   }
 
+  static func -(lhs: Self, rhs: Self) -> Self {
+    Self(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
+  }
+
   static func *(lhs: Self, rhs: Int) -> Self {
     Self(x: lhs.x * rhs, y: lhs.y * rhs)
+  }
+
+  static func /(lhs: Self, rhs: Int) -> Self {
+    Self(x: lhs.x / rhs, y: lhs.y / rhs)
   }
 }
 
@@ -50,6 +58,13 @@ struct Mat3: Hashable {
     )
   }
 
+  static var identity: Self {
+    Self(
+      e0: Vec3(x: 1, y: 0, z: 0),
+      e1: Vec3(x: 0, y: 1, z: 0),
+      e2: Vec3(x: 0, y: 0, z: 0)
+    )
+  }
   static var rotX: Self {
     Self(
       e0: Vec3(x: 1, y: 0, z:  0),
@@ -120,6 +135,10 @@ enum Direction: Int, Hashable, CaseIterable {
 }
 
 extension Vec2 {
+  init(_ vec3: Vec3) {
+    self.init(x: vec3.x, y: vec3.y)
+  }
+
   init(_ direction: Direction) {
     switch direction {
     case .left:  self.init(x: -1, y:  0)
@@ -127,6 +146,12 @@ extension Vec2 {
     case .right: self.init(x:  1, y:  0)
     case .down:  self.init(x:  0, y:  1)
     }
+  }
+}
+
+extension Vec3 {
+  init(_ vec2: Vec2) {
+    self.init(x: vec2.x, y: vec2.y, z: 0)
   }
 }
 
@@ -150,33 +175,33 @@ extension Range where Bound == Int {
 }
 
 class Fields {
-  private static let cubeSize = 50
-
   let rows: [[Field]]
   let columns: [[Field]]
-  let cubeMap: [Vec2: Vec3]
+  let cubeSize: Int
+  let cubeMap: [Vec2: Mat3]
 
-  init(rows: [[Field]]) {
+  init(rows: [[Field]], cubeSize: Int) {
     self.rows = rows
-    let width = rows.map(\.count).max() ?? 0
+    self.cubeSize = cubeSize
 
+    let width = rows.map(\.count).max() ?? 0
     let columns = (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
     self.columns = columns
 
     /// Construct a cube map by performing a DFS on the unrolled cube net.
-    func constructCubeMap(mapPos: Vec2 = .init(x: 0, y: 0), cubeNormal: Vec3 = .init(x: 1, y: 0, z: 0), cubeMap: inout [Vec2: Vec3]) {
-      let position = mapPos * Self.cubeSize
+    func constructCubeMap(mapPos: Vec2 = .init(x: 0, y: 0), cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
+      let position = mapPos * cubeSize
       guard position.x >= 0 && position.x < columns.count,
             position.y >= 0 && position.y < rows.count else { return }
       if !cubeMap.keys.contains(mapPos) {
-        cubeMap[mapPos] = cubeNormal
+        cubeMap[mapPos] = cubeRotation
         for direction in Direction.allCases {
-          constructCubeMap(mapPos: mapPos + Vec2(direction), cubeNormal: direction.rotation * cubeNormal, cubeMap: &cubeMap)
+          constructCubeMap(mapPos: mapPos + Vec2(direction), cubeRotation: direction.rotation * cubeRotation, cubeMap: &cubeMap)
         }
       }
     }
 
-    var cubeMap: [Vec2: Vec3] = [:]
+    var cubeMap: [Vec2: Mat3] = [:]
     constructCubeMap(cubeMap: &cubeMap)
     self.cubeMap = cubeMap
   }
@@ -185,7 +210,7 @@ class Fields {
 protocol WrapperProtocol {
   init(fields: Fields, position: Vec2, facing: Direction)
 
-  func wrap(next: Vec2) -> Vec2
+  func wrap(current: Vec2, next: Vec2) -> Vec2
 }
 
 struct Board: CustomStringConvertible {
@@ -216,7 +241,7 @@ struct Board: CustomStringConvertible {
       let wrapper = Wrapper(fields: fields, position: position, facing: facing)
       loop:
       for _ in 0..<tiles {
-        let next = wrapper.wrap(next: position + Vec2(facing))
+        let next = wrapper.wrap(current: position, next: position + Vec2(facing))
         let row = fields.rows[next.y]
         switch row[min(row.count - 1, next.x)] {
           case .space: position = next
@@ -251,7 +276,7 @@ struct Part1Wrapper: WrapperProtocol {
     colRange = fields.columns[position.x].boardRange
   }
 
-  func wrap(next: Vec2) -> Vec2 {
+  func wrap(current: Vec2, next: Vec2) -> Vec2 {
     var next = next
     next.x = rowRange.wrap(next.x)
     next.y = colRange.wrap(next.y)
@@ -261,20 +286,36 @@ struct Part1Wrapper: WrapperProtocol {
 
 struct Part2Wrapper: WrapperProtocol {
   private let fields: Fields
+  private let rotation: Mat3
 
   init(fields: Fields, position: Vec2, facing: Direction) {
     self.fields = fields
-    
+    rotation = facing.rotation
   }
 
-  func wrap(next: Vec2) -> Vec2 {
-    fatalError("TODO")
+  func wrap(current: Vec2, next: Vec2) -> Vec2 {
+    let rowRange = fields.rows[next.y].boardRange
+    let colRange = fields.columns[next.x].boardRange
+    guard !rowRange.contains(next.y) || !colRange.contains(next.x) else { return next }
+    let mapPos = current / fields.cubeSize
+    guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
+    let nextRotation = rotation * cubeRotation
+    var rotationDelta = Mat3.identity
+    for _ in 0..<4 {
+      if let nextMapPos = fields.cubeMap.first(where: { $0.value == rotationDelta * nextRotation })?.key {
+        let baseIntraPos = next - ((next / fields.cubeSize) * fields.cubeSize)
+        let nextIntraPos = Vec2(rotationDelta * Vec3(baseIntraPos))
+        return (nextMapPos * fields.cubeSize) + nextIntraPos
+      }
+      rotationDelta = .rotZ * rotationDelta
+    }
+    fatalError("No aligned rotation of \(nextRotation) was mapped (cube map: \(fields.cubeMap))")
   }
 }
 
 extension Board {
-  init(rawFields: [[Character]]) {
-    fields = Fields(rows: rawFields.map { $0.map { Field(rawValue: $0)! } })
+  init(rawFields: [[Character]], cubeSize: Int) {
+    fields = Fields(rows: rawFields.map { $0.map { Field(rawValue: $0)! } }, cubeSize: cubeSize)
     position = Vec2(x: fields.rows[0].firstIndex { $0 != .border }!, y: 0)
   }
 }
@@ -283,7 +324,8 @@ let url = URL(fileURLWithPath: "Resources/input.txt")
 let input = String(data: try Data(contentsOf: url), encoding: .utf8)!
 let rawParts = input.split(separator: "\n\n")
 
-let board = Board(rawFields: Array(rawParts[0].split(separator: "\n").map(Array.init)))
+let cubeSize = 50
+let board = Board(rawFields: Array(rawParts[0].split(separator: "\n").map(Array.init)), cubeSize: cubeSize)
 let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { match -> Instruction in
   let output = match.output
   if let tiles = output.tiles {
@@ -296,4 +338,5 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
 }
 
 print("Part 1: \(board.performing(instructions: instructions, with: Part1Wrapper.self).password)")
+print("Part 2: \(board.performing(instructions: instructions, with: Part2Wrapper.self).password)")
 
