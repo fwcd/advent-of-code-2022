@@ -1,6 +1,14 @@
 import Foundation
 
-enum Field: Character {
+infix operator %%
+
+extension Int {
+  static func %%(lhs: Self, rhs: Self) -> Self {
+    ((lhs % rhs) + rhs) % rhs
+  }
+}
+
+enum Field: Character, Hashable {
   case border = " "
   case solid = "#"
   case space = "."
@@ -19,7 +27,7 @@ struct Vec2: Hashable {
   }
 }
 
-enum Direction: Int, CaseIterable {
+enum Direction: Int, Hashable, CaseIterable {
   case right = 0
   case down
   case left
@@ -36,14 +44,14 @@ enum Direction: Int, CaseIterable {
   var arrow: Character {
     switch self {
     case .right: return ">"
-    case .down: return "v"
-    case .left: return "<"
-    case .up: return "^"
+    case .down:  return "v"
+    case .left:  return "<"
+    case .up:    return "^"
     }
   }
 
-  static func +=(lhs: inout Self, rhs: Self) {
-    lhs = Self(rawValue: (lhs.rawValue + rhs.rawValue + 1) % Self.allCases.count)!
+  static func +(lhs: Self, rhs: Self) -> Self {
+    Self(rawValue: (lhs.rawValue + rhs.rawValue + 1) % Self.allCases.count)!
   }
 }
 
@@ -58,7 +66,52 @@ extension Vec2 {
   }
 }
 
-enum Instruction {
+enum Axis: Int, Hashable, CaseIterable {
+  case x = 0
+  case y
+  case z
+
+  var leftRightAxis: Axis {
+    switch self {
+    case .x, .z: return .y
+    case .y:     return .z
+    }
+  }
+  var upDownAxis: Axis {
+    switch self {
+    case .x:     return .z
+    case .y, .z: return .x
+    }
+  }
+}
+
+struct CubeFace: Hashable {
+  var axis: Axis
+  var up: Bool
+
+  static func +(lhs: Self, rhs: Direction) -> Self {
+    switch rhs {
+    case .left:  return lhs.rotating(around: lhs.axis.leftRightAxis, delta: -1)
+    case .right: return lhs.rotating(around: lhs.axis.leftRightAxis, delta:  1)
+    case .up:    return lhs.rotating(around: lhs.axis.upDownAxis,    delta: -1)
+    case .down:  return lhs.rotating(around: lhs.axis.upDownAxis,    delta:  1)
+    }
+  }
+
+  func rotating(around rotationAxis: Axis, delta: Int) -> Self {
+    func swapBits(_ x: Int) -> Int {
+      ((x & 1) << 1) | ((x >> 1) & 1)
+    }
+    let axes = Axis.allCases.filter { $0 != rotationAxis }
+    let axisIndex = axes.firstIndex(of: axis)!
+    let upIndex = up ? 1 : 0
+    let encodedCurrent = (axisIndex << 1) | upIndex
+    let encodedNext = swapBits((swapBits(encodedCurrent) + delta) %% 4)
+    return Self(axis: axes[(encodedNext >> 1) & 1], up: (encodedNext & 1) == 1)
+  }
+}
+
+enum Instruction: Hashable {
   case tiles(Int)
   case turn(Direction)
 }
@@ -73,7 +126,7 @@ extension Array where Element == Field {
 
 extension Range where Bound == Int {
   func wrap(_ value: Int) -> Int {
-    ((value - lowerBound) % count + count) % count + lowerBound
+    ((value - lowerBound) %% count) + lowerBound
   }
 }
 
@@ -125,7 +178,7 @@ struct Board: CustomStringConvertible {
         }
       }
     case .turn(let turn):
-      facing += turn
+      facing = facing + turn
     }
   }
 
