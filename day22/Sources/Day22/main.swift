@@ -63,13 +63,6 @@ struct Mat3: Hashable, CustomStringConvertible {
     "(\(e0), \(e1), \(e2))"
   }
 
-  var botRightToTopLeft2x2: Self {
-    Self(
-      e0: Vec3(x: e1.y, y: e1.z, z: 0),
-      e1: Vec3(x: e2.y, y: e1.z, z: 0),
-      e2: Vec3(x:    0, y:    0, z: 1)
-    )
-  }
   var transpose: Self {
     Self(
       e0: Vec3(x: e0.x, y: e1.x, z: e2.x),
@@ -155,8 +148,12 @@ enum Direction: Int, Hashable, CaseIterable {
 }
 
 extension Vec2 {
-  init(_ vec3: Vec3) {
+  init(fromXy vec3: Vec3) {
     self.init(x: vec3.x, y: vec3.y)
+  }
+  
+  init(fromYz vec3: Vec3) {
+    self.init(x: vec3.y, y: vec3.z)
   }
 
   init(_ direction: Direction) {
@@ -179,8 +176,12 @@ extension Direction {
 }
 
 extension Vec3 {
-  init(_ vec2: Vec2) {
-    self.init(x: vec2.x, y: vec2.y, z: 0)
+  init(xy vec2: Vec2) {
+    self.init(x: vec2.x, y: vec2.y)
+  }
+
+  init(yz vec2: Vec2) {
+    self.init(y: vec2.x, z: vec2.y)
   }
 }
 
@@ -270,6 +271,10 @@ struct Board: CustomStringConvertible {
   }
 
   mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
+    if wrapperType == Part2Wrapper.self {
+      print(self)
+      print()
+    }
     switch instruction {
     case .tiles(let tiles):
       let wrapper = Wrapper(fields: fields, position: position, facing: facing)
@@ -286,6 +291,10 @@ struct Board: CustomStringConvertible {
       }
     case .turn(let turn):
       facing = facing + turn
+    }
+    if wrapperType == Part2Wrapper.self {
+      print(self)
+      print()
     }
   }
 
@@ -336,11 +345,16 @@ struct Part2Wrapper: WrapperProtocol {
     let cubeNormal = nextUnalignedRotation.e0
     assert(cubeNormal != .zero)
     guard let (nextMapPos, nextCubeRotation) = fields.cubeMap.first(where: { $0.value.e0 == cubeNormal }) else { fatalError("No aligned rotation for cube normal \(cubeNormal) (cube map: \(fields.cubeMap))") }
-    let baseIntraPos = next - ((next / fields.cubeSize) * fields.cubeSize)
-    let totalRotation: Mat3 = (nextCubeRotation * nextUnalignedRotation.transpose).botRightToTopLeft2x2
-    let nextIntraPos = Vec2(totalRotation * Vec3(baseIntraPos))
+    let baseIntraPos = current - (mapPos * fields.cubeSize)
+    print("Normal \(cubeRotation) -> \(nextCubeRotation) (going from \(mapPos) -> \(nextMapPos)) @ \(nextMapPos) during \(current) -> \(next)")
+    let intraRotation: Mat3 = nextUnalignedRotation.transpose * nextCubeRotation
+    let nextIntraPos = Vec2(fromYz: intraRotation * Vec3(yz: baseIntraPos))
+    print("\(next)")
     next = (nextMapPos * fields.cubeSize) + nextIntraPos
-    guard let nextFacing = Direction(Vec2(totalRotation * Vec3(Vec2(facing)))) else { fatalError("Could not compute next facing") }
+    print("  --> \(next)")
+    let rawDir = Vec2(fromYz: intraRotation * Vec3(yz: Vec2(facing)))
+    print("rot: \(intraRotation), dir: \(intraRotation * Vec3(yz: Vec2(facing)))")
+    guard let nextFacing = Direction(rawDir) else { fatalError("Could not compute next facing") }
     facing = nextFacing
   }
 }
