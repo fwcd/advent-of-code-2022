@@ -14,9 +14,11 @@ enum Field: Character, Hashable {
   case space = "."
 }
 
-struct Vec2: Hashable {
+struct Vec2: Hashable, CustomStringConvertible {
   var x: Int
   var y: Int
+
+  var description: String { "(\(x), \(y))" }
 
   static func +(lhs: Self, rhs: Self) -> Self {
     Self(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
@@ -35,20 +37,24 @@ struct Vec2: Hashable {
   }
 }
 
-struct Vec3: Hashable {
+struct Vec3: Hashable, CustomStringConvertible {
   var x: Int
   var y: Int
   var z: Int
+
+  var description: String { "(\(x), \(y), \(z))" }
 
   func dot(_ rhs: Self) -> Int {
     x * rhs.x + y * rhs.y + z * rhs.z
   }
 }
 
-struct Mat3: Hashable {
+struct Mat3: Hashable, CustomStringConvertible {
   var e0: Vec3
   var e1: Vec3
   var e2: Vec3
+
+  var description: String { "(\(e0), \(e1), \(e2))" }
 
   var transpose: Self {
     Self(
