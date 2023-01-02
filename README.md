@@ -31,9 +31,19 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [ ] Day 24
 - [ ] Day 25
 
-## Running
+## Scripts
 
-Each day includes two scripts, `./bootstrap` and `./run`: The former installs the required dependencies and the latter builds and runs the program.
+Each day includes two scripts:
+
+- `./bootstrap` installs the language (compiler or interpreter) and project dependencies if needed
+- `./run` builds and runs the program
+
+Some days that need additional configuration also have environment-related scripts invoked by CI:
+
+- `./path` computes a list of entries to dynamically append to the `PATH`
+- `./env` computes a list of environment variables to set
+
+This standardized pattern lets CI use a single workflow (per OS) across all days. Additionally, they make it easy to get started developing locally even across the range of different languages, build tools and package managers involved.
 
 ## Previous years
 
