@@ -27,5 +27,11 @@ let package = Package(
             ],
             swiftSettings: [.unsafeFlags(["-enable-bare-slash-regex"])]
         ),
+        .testTarget(
+            name: "Day22Tests",
+            dependencies: [
+                .target(name: "Day22"),
+            ]
+        )
     ]
 )
