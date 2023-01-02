@@ -224,7 +224,7 @@ extension Board {
   }
 }
 
-let url = URL(filePathWithURL: "Resources/input.txt")
+let url = URL(fileURLWithPath: "Resources/input.txt")
 let input = String(data: try Data(contentsOf: url), encoding: .utf8)!
 let rawParts = input.split(separator: "\n\n")
 
