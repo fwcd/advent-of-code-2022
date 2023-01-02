@@ -68,7 +68,7 @@ struct Mat3: Hashable, CustomStringConvertible {
     Self(
       e0: Vec3(x: 1, y: 0, z: 0),
       e1: Vec3(x: 0, y: 1, z: 0),
-      e2: Vec3(x: 0, y: 0, z: 0)
+      e2: Vec3(x: 0, y: 0, z: 1)
     )
   }
   static var rotX: Self {
