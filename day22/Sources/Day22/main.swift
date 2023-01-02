@@ -1,4 +1,5 @@
 import Foundation
+import Collections
 
 infix operator %%
 
@@ -198,14 +199,18 @@ class Fields {
 
     /// Construct a cube map by performing a DFS on the unrolled cube net.
     func constructCubeMap(mapPos: Vec2, cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
-      let position = mapPos * cubeSize
-      guard position.y >= 0 && position.y < rows.count,
-            position.x >= 0 && position.x < rows[position.y].count,
-            rows[position.y][position.x] != .border else { return }
-      if !cubeMap.keys.contains(mapPos) {
-        cubeMap[mapPos] = cubeRotation
-        for direction in Direction.allCases {
-          constructCubeMap(mapPos: mapPos + Vec2(direction), cubeRotation: direction.rotation * cubeRotation, cubeMap: &cubeMap)
+      var queue = Deque([(mapPos: mapPos, cubeRotation: cubeRotation)])
+      while let node = queue.popFirst() {
+        let position = node.mapPos * cubeSize
+        guard position.y >= 0 && position.y < rows.count,
+              position.x >= 0 && position.x < rows[position.y].count,
+              rows[position.y][position.x] != .border else { continue }
+        if !cubeMap.keys.contains(node.mapPos) {
+          cubeMap[node.mapPos] = node.cubeRotation
+          print(node.cubeRotation)
+          for direction in Direction.allCases {
+            queue.append((mapPos: node.mapPos + Vec2(direction), cubeRotation: direction.rotation * node.cubeRotation))
+          }
         }
       }
     }
