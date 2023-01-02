@@ -79,8 +79,13 @@ extension Range where Bound == Int {
 
 struct Board: CustomStringConvertible {
   var fields: [[Field]]
-  var facing: Direction
-  var position: Vec2
+  var position: Vec2 {
+    willSet {
+      track[position] = facing
+    }
+  }
+  var facing: Direction = .right
+  var track: [Vec2: Direction] = [:]
 
   var transposed: Board {
     var t = self
@@ -95,7 +100,7 @@ struct Board: CustomStringConvertible {
     fields
       .enumerated()
       .map { (y, row) in String(row.enumerated().map { (x, f) in
-        position == Vec2(x: x, y: y) ? facing.arrow : f.rawValue
+        track[Vec2(x: x, y: y)]?.arrow ?? f.rawValue
       }) }
       .joined(separator: "\n")
   }
@@ -132,7 +137,6 @@ struct Board: CustomStringConvertible {
 extension Board {
   init(rawFields: [[Character]]) {
     fields = rawFields.map { $0.map { Field(rawValue: $0)! } }
-    facing = .right
     position = Vec2(x: fields[0].firstIndex { $0 != .border }!, y: 0)
   }
 }
@@ -154,4 +158,5 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
 }
 
 let finalBoard = instructions.reduce(board) { $0.performing(instruction: $1) }
+print(finalBoard)
 print("Part 1: \(finalBoard.password)")
