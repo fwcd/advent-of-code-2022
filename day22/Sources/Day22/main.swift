@@ -19,6 +19,7 @@ struct Vec2: Hashable, CustomStringConvertible {
   var x: Int = 0
   var y: Int = 0
 
+  var sum: Int { x + y }
   var description: String { "(\(x), \(y))" }
 
   static var zero = Self()
@@ -38,6 +39,10 @@ struct Vec2: Hashable, CustomStringConvertible {
   static func /(lhs: Self, rhs: Int) -> Self {
     Self(x: lhs.x / rhs, y: lhs.y / rhs)
   }
+
+  static prefix func -(lhs: Self) -> Self {
+    Self(x: -lhs.x, y: -lhs.y)
+  }
 }
 
 struct Vec3: Hashable, CustomStringConvertible {
@@ -45,9 +50,10 @@ struct Vec3: Hashable, CustomStringConvertible {
   var y: Int = 0
   var z: Int = 0
 
-  static var zero = Self()
-
+  var sum: Int { x + y }
   var description: String { "(\(x), \(y), \(z))" }
+
+  static var zero = Self()
 
   func dot(_ rhs: Self) -> Int {
     x * rhs.x + y * rhs.y + z * rhs.z
@@ -228,7 +234,6 @@ final class Fields {
               rows[position.y][position.x] != .border else { continue }
         if !cubeMap.keys.contains(node.mapPos) {
           cubeMap[node.mapPos] = node.cubeRotation
-          print(node.mapPos, node.cubeRotation, node.origin)
           for direction in Direction.allCases {
             queue.append((mapPos: node.mapPos + Vec2(direction), cubeRotation: node.cubeRotation * direction.rotation, origin: direction))
           }
@@ -344,24 +349,30 @@ struct Part2Wrapper: WrapperProtocol {
   }
 
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
+    // Check that we are actually out of range
     let rowRange = fields.rows[next.y].boardRange
     let colRange = fields.columns[next.x].boardRange
     guard !rowRange.contains(next.y) || !colRange.contains(next.x) else { return }
+    // Compute the cube face and normal we are currently in
     let mapPos = current / fields.cubeSize
     guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
+    // Compute the normal of the next face
     let nextUnalignedRotation = cubeRotation * rotation
     let cubeNormal = nextUnalignedRotation.e0
     assert(cubeNormal != .zero)
+    // Look up the rotation/orientation of the next face in the cube map
     guard let (nextMapPos, nextCubeRotation) = fields.cubeMap.first(where: { $0.value.e0 == cubeNormal }) else { fatalError("No aligned rotation for cube normal \(cubeNormal) (cube map: \(fields.cubeMap))") }
-    let baseIntraPos = current - (mapPos * fields.cubeSize)
-    print("Normal \(cubeRotation) -> \(nextCubeRotation) (going from \(mapPos) -> \(nextMapPos)) @ \(nextMapPos) during \(current) -> \(next)")
-    let intraRotation: Mat3 = nextUnalignedRotation.transpose * nextCubeRotation
-    let nextIntraPos = Vec2(fromYz: intraRotation * Vec3(yz: baseIntraPos))
-    print("\(next)")
+    // Compute the (wrapped) position within our current cube face
+    var baseIntraPos = next - (mapPos * fields.cubeSize)
+    baseIntraPos.x = baseIntraPos.x %% fields.cubeSize
+    baseIntraPos.y = baseIntraPos.y %% fields.cubeSize
+    // Compute the position within the next cube face by performing a centered rotation
+    let intraRotation: Mat3 = nextCubeRotation.transpose * nextUnalignedRotation
+    let centerOffset = Vec2(x: fields.cubeSize - 1, y: fields.cubeSize - 1)
+    let nextIntraPos = (Vec2(fromYz: intraRotation * Vec3(yz: baseIntraPos * 2 - centerOffset)) + centerOffset) / 2
+    assert(nextIntraPos.x >= 0 && nextIntraPos.y >= 0)
     next = (nextMapPos * fields.cubeSize) + nextIntraPos
-    print("  --> \(next)")
     let rawDir = Vec2(fromYz: intraRotation * Vec3(yz: Vec2(facing)))
-    print("rot: \(intraRotation), dir: \(intraRotation * Vec3(yz: Vec2(facing)))")
     guard let nextFacing = Direction(rawDir) else { fatalError("Could not compute next facing") }
     facing = nextFacing
   }
