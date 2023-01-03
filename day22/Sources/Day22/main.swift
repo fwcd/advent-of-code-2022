@@ -19,7 +19,6 @@ struct Vec2: Hashable, CustomStringConvertible {
   var x: Int = 0
   var y: Int = 0
 
-  var sum: Int { x + y }
   var description: String { "(\(x), \(y))" }
 
   static var zero = Self()
@@ -39,10 +38,6 @@ struct Vec2: Hashable, CustomStringConvertible {
   static func /(lhs: Self, rhs: Int) -> Self {
     Self(x: lhs.x / rhs, y: lhs.y / rhs)
   }
-
-  static prefix func -(lhs: Self) -> Self {
-    Self(x: -lhs.x, y: -lhs.y)
-  }
 }
 
 struct Vec3: Hashable, CustomStringConvertible {
@@ -50,7 +45,6 @@ struct Vec3: Hashable, CustomStringConvertible {
   var y: Int = 0
   var z: Int = 0
 
-  var sum: Int { x + y }
   var description: String { "(\(x), \(y), \(z))" }
 
   static var zero = Self()
@@ -154,10 +148,6 @@ enum Direction: Int, Hashable, CaseIterable {
 }
 
 extension Vec2 {
-  init(fromXy vec3: Vec3) {
-    self.init(x: vec3.x, y: vec3.y)
-  }
-  
   init(fromYz vec3: Vec3) {
     self.init(x: vec3.y, y: vec3.z)
   }
@@ -182,10 +172,6 @@ extension Direction {
 }
 
 extension Vec3 {
-  init(xy vec2: Vec2) {
-    self.init(x: vec2.x, y: vec2.y)
-  }
-
   init(yz vec2: Vec2) {
     self.init(y: vec2.x, z: vec2.y)
   }
