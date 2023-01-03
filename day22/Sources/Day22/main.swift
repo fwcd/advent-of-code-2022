@@ -224,7 +224,13 @@ final class Fields {
     let columns = (0..<width).map { x in rows.map { x < $0.count ? $0[x] : .border } }
     self.columns = columns
 
-    /// Construct a cube map by performing a DFS on the unrolled cube net.
+    // Idea: Map net positions aka. cube faces (on a grid where each cell has the size of the cube's
+    //       side length) to rotations of the cube. These rotations are represented as orthogonal 3x3 matrices
+    //       where the first base vector is the normal of the mapped face and the other two base vectors
+    //       represent the face's orientation. Since all matrices are orthogonal, we can easily invert them
+    //       by transposing them (we'll use that quite a bit in the wrapper implementation).
+
+    /// Perform a BFS over the cube net to find the rotations.
     func constructCubeMap(mapPos: Vec2, cubeRotation: Mat3 = .identity, cubeMap: inout [Vec2: Mat3]) {
       var queue: Deque<(mapPos: Vec2, cubeRotation: Mat3, origin: Direction?)> = [(mapPos: mapPos, cubeRotation: cubeRotation, origin: nil)]
       while let node = queue.popFirst() {
