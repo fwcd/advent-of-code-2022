@@ -233,6 +233,8 @@ final class Fields {
               position.x >= 0 && position.x < rows[position.y].count,
               rows[position.y][position.x] != .border else { continue }
         if !cubeMap.keys.contains(node.mapPos) {
+          // Assert that no normal is mapped twice
+          assert(!cubeMap.values.contains { $0.e0 == node.cubeRotation.e0 })
           cubeMap[node.mapPos] = node.cubeRotation
           for direction in Direction.allCases {
             queue.append((mapPos: node.mapPos + Vec2(direction), cubeRotation: node.cubeRotation * direction.rotation, origin: direction))
@@ -243,6 +245,7 @@ final class Fields {
 
     var cubeMap: [Vec2: Mat3] = [:]
     constructCubeMap(mapPos: rows[0].enumerated().first { $0.element != .border }.map { Vec2(x: $0.offset, y: 0) / cubeSize }!, cubeMap: &cubeMap)
+    assert(cubeMap.count == 6, "Not the entire cube was mapped (only \(cubeMap.count) faces)")
     self.cubeMap = cubeMap
   }
 
@@ -380,11 +383,12 @@ extension Board {
   }
 }
 
-let url = URL(fileURLWithPath: "Resources/demo.txt")
+let url = URL(fileURLWithPath: "Resources/input.txt")
+let cubeSize = 50
+
 let input = String(data: try Data(contentsOf: url), encoding: .utf8)!
 let rawParts = input.split(separator: "\n\n")
 
-let cubeSize = 4
 let board = Board(fields: Fields(rawString: String(rawParts[0]), cubeSize: cubeSize))
 let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { match -> Instruction in
   let output = match.output
