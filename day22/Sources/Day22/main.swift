@@ -251,7 +251,7 @@ final class Fields {
 }
 
 protocol WrapperProtocol {
-  init(fields: Fields, position: Vec2, facing: Direction)
+  init(fields: Fields)
 
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction)
 }
@@ -281,9 +281,9 @@ struct Board: CustomStringConvertible {
   mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
     switch instruction {
     case .tiles(let tiles):
+      let wrapper = Wrapper(fields: fields)
       loop:
       for _ in 0..<tiles {
-        let wrapper = Wrapper(fields: fields, position: position, facing: facing)
         var next = position + Vec2(facing)
         var nextFacing = facing
         wrapper.wrap(current: position, next: &next, facing: &nextFacing)
@@ -311,30 +311,18 @@ struct Board: CustomStringConvertible {
 }
 
 struct Part1Wrapper: WrapperProtocol {
-  var fields: Fields
-  var rowRange: Range<Int>
-  var colRange: Range<Int>
-
-  init(fields: Fields, position: Vec2, facing: Direction) {
-    self.fields = fields
-    rowRange = fields.rows[position.y].boardRange
-    colRange = fields.columns[position.x].boardRange
-  }
+  let fields: Fields
 
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
+    let rowRange = fields.rows[current.y].boardRange
+    let colRange = fields.columns[current.x].boardRange
     next.x = rowRange.wrap(next.x)
     next.y = colRange.wrap(next.y)
   }
 }
 
 struct Part2Wrapper: WrapperProtocol {
-  private let fields: Fields
-  private let rotation: Mat3
-
-  init(fields: Fields, position: Vec2, facing: Direction) {
-    self.fields = fields
-    rotation = facing.rotation
-  }
+  let fields: Fields
 
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
     // Check that we are actually out of range
@@ -347,7 +335,7 @@ struct Part2Wrapper: WrapperProtocol {
     let mapPos = current / fields.cubeSize
     guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
     // Compute the normal of the next face
-    let nextUnalignedRotation = cubeRotation * rotation
+    let nextUnalignedRotation = cubeRotation * facing.rotation
     let cubeNormal = nextUnalignedRotation.e0
     assert(cubeNormal != .zero)
     // Look up the rotation/orientation of the next face in the cube map

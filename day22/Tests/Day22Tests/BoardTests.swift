@@ -28,7 +28,7 @@ class BoardTests: XCTestCase {
     ])
 
     func assertThat<Wrapper: WrapperProtocol>(_ type: Wrapper.Type, wraps current: Vec2, facing: Direction, to next: Vec2, facing nextFacing: Direction, line: UInt = #line) {
-      let wrapper = Wrapper(fields: fields, position: current, facing: facing)
+      let wrapper = Wrapper(fields: fields)
       var actualFacing = facing
       var actual = current + Vec2(facing)
       wrapper.wrap(current: current, next: &actual, facing: &actualFacing)
