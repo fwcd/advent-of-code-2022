@@ -204,7 +204,7 @@ extension Range where Bound == Int {
   }
 }
 
-class Fields {
+final class Fields {
   let rows: [[Field]]
   let columns: [[Field]]
   let cubeSize: Int
@@ -239,6 +239,14 @@ class Fields {
     var cubeMap: [Vec2: Mat3] = [:]
     constructCubeMap(mapPos: rows[0].enumerated().first { $0.element != .border }.map { Vec2(x: $0.offset, y: 0) / cubeSize }!, cubeMap: &cubeMap)
     self.cubeMap = cubeMap
+  }
+
+  convenience init(rawFields: [[Character]], cubeSize: Int) {
+    self.init(rows: rawFields.map { $0.map { Field(rawValue: $0)! } }, cubeSize: cubeSize)
+  }
+
+  convenience init(rawString: String, cubeSize: Int) {
+    self.init(rawFields: rawString.split(separator: "\n").map(Array.init), cubeSize: cubeSize)
   }
 }
 
@@ -360,8 +368,8 @@ struct Part2Wrapper: WrapperProtocol {
 }
 
 extension Board {
-  init(rawFields: [[Character]], cubeSize: Int) {
-    fields = Fields(rows: rawFields.map { $0.map { Field(rawValue: $0)! } }, cubeSize: cubeSize)
+  init(fields: Fields) {
+    self.fields = fields
     position = Vec2(x: fields.rows[0].firstIndex { $0 != .border }!, y: 0)
   }
 }
@@ -371,7 +379,7 @@ let input = String(data: try Data(contentsOf: url), encoding: .utf8)!
 let rawParts = input.split(separator: "\n\n")
 
 let cubeSize = 4
-let board = Board(rawFields: Array(rawParts[0].split(separator: "\n").map(Array.init)), cubeSize: cubeSize)
+let board = Board(fields: Fields(rawString: String(rawParts[0]), cubeSize: cubeSize))
 let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { match -> Instruction in
   let output = match.output
   if let tiles = output.tiles {
