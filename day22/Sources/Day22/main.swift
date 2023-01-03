@@ -1,180 +1,10 @@
 import Foundation
 import Collections
 
-infix operator %%
-
-extension Int {
-  static func %%(lhs: Self, rhs: Self) -> Self {
-    ((lhs % rhs) + rhs) % rhs
-  }
-}
-
 enum Field: Character, Hashable {
   case border = " "
   case solid = "#"
   case space = "."
-}
-
-struct Vec2: Hashable, CustomStringConvertible {
-  var x: Int = 0
-  var y: Int = 0
-
-  var description: String { "(\(x), \(y))" }
-
-  static var zero = Self()
-
-  static func +(lhs: Self, rhs: Self) -> Self {
-    Self(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
-  }
-
-  static func -(lhs: Self, rhs: Self) -> Self {
-    Self(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
-  }
-
-  static func *(lhs: Self, rhs: Int) -> Self {
-    Self(x: lhs.x * rhs, y: lhs.y * rhs)
-  }
-
-  static func /(lhs: Self, rhs: Int) -> Self {
-    Self(x: lhs.x / rhs, y: lhs.y / rhs)
-  }
-}
-
-struct Vec3: Hashable, CustomStringConvertible {
-  var x: Int = 0
-  var y: Int = 0
-  var z: Int = 0
-
-  var description: String { "(\(x), \(y), \(z))" }
-
-  static var zero = Self()
-
-  func dot(_ rhs: Self) -> Int {
-    x * rhs.x + y * rhs.y + z * rhs.z
-  }
-}
-
-struct Mat3: Hashable, CustomStringConvertible {
-  var e0: Vec3
-  var e1: Vec3
-  var e2: Vec3
-
-  var description: String {
-    "(\(e0), \(e1), \(e2))"
-  }
-
-  var transpose: Self {
-    Self(
-      e0: Vec3(x: e0.x, y: e1.x, z: e2.x),
-      e1: Vec3(x: e0.y, y: e1.y, z: e2.y),
-      e2: Vec3(x: e0.z, y: e1.z, z: e2.z)
-    )
-  }
-
-  static var identity: Self {
-    Self(
-      e0: Vec3(x: 1, y: 0, z: 0),
-      e1: Vec3(x: 0, y: 1, z: 0),
-      e2: Vec3(x: 0, y: 0, z: 1)
-    )
-  }
-  static var rotX: Self {
-    Self(
-      e0: Vec3(x: 1, y:  0, z: 0),
-      e1: Vec3(x: 0, y:  0, z: 1),
-      e2: Vec3(x: 0, y: -1, z: 0)
-    )
-  }
-  static var rotY: Self {
-    Self(
-      e0: Vec3(x: 0, y: 0, z: -1),
-      e1: Vec3(x: 0, y: 1, z:  0),
-      e2: Vec3(x: 1, y: 0, z:  0)
-    )
-  }
-  static var rotZ: Self {
-    Self(
-      e0: Vec3(x:  0, y: 1, z: 0),
-      e1: Vec3(x: -1, y: 0, z: 0),
-      e2: Vec3(x:  0, y: 0, z: 1)
-    )
-  }
-
-  static func *(lhs: Self, rhs: Vec3) -> Vec3 {
-    let t = lhs.transpose
-    return Vec3(x: t.e0.dot(rhs), y: t.e1.dot(rhs), z: t.e2.dot(rhs))
-  }
-
-  static func *(lhs: Self, rhs: Self) -> Self {
-    Self(e0: lhs * rhs.e0, e1: lhs * rhs.e1, e2: lhs * rhs.e2)
-  }
-}
-
-enum Direction: Int, Hashable, CaseIterable {
-  case right = 0
-  case down
-  case left
-  case up
-
-  init?(rawString: String) {
-    switch rawString {
-    case "L": self = .left
-    case "R": self = .right
-    default:  return nil
-    }
-  }
-
-  var arrow: Character {
-    switch self {
-    case .right: return ">"
-    case .down:  return "v"
-    case .left:  return "<"
-    case .up:    return "^"
-    }
-  }
-
-  var rotation: Mat3 {
-    switch self {
-    case .right: return .rotZ
-    case .down: return .rotY.transpose
-    case .left: return .rotZ.transpose
-    case .up: return .rotY
-    }
-  }
-
-  static func +(lhs: Self, rhs: Self) -> Self {
-    Self(rawValue: (lhs.rawValue + rhs.rawValue + 1) % Self.allCases.count)!
-  }
-}
-
-extension Vec2 {
-  init(fromYz vec3: Vec3) {
-    self.init(x: vec3.y, y: vec3.z)
-  }
-
-  init(_ direction: Direction) {
-    switch direction {
-    case .left:  self.init(x: -1, y:  0)
-    case .up:    self.init(x:  0, y: -1)
-    case .right: self.init(x:  1, y:  0)
-    case .down:  self.init(x:  0, y:  1)
-    }
-  }
-}
-
-extension Direction {
-  init?(_ vec2: Vec2) {
-    guard let direction = Self.allCases.first(where: { Vec2($0) == vec2 }) else {
-      return nil
-    }
-    self = direction
-  }
-}
-
-extension Vec3 {
-  init(yz vec2: Vec2) {
-    self.init(y: vec2.x, z: vec2.y)
-  }
 }
 
 enum Instruction: Hashable {
@@ -182,17 +12,11 @@ enum Instruction: Hashable {
   case turn(Direction)
 }
 
-extension Array where Element == Field {
+fileprivate extension Array where Element == Field {
   var boardRange: Range<Int> {
     let start = drop { $0 == .border }
     let end = start.drop { $0 != .border }
     return start.startIndex..<end.startIndex
-  }
-}
-
-extension Range where Bound == Int {
-  func wrap(_ value: Int) -> Int {
-    ((value - lowerBound) %% count) + lowerBound
   }
 }
 
@@ -383,4 +207,3 @@ let instructions = rawParts[1].matches(of: /(?<tiles>\d+)|(?<turn>[LR])/).map { 
 
 print("Part 1: \(board.performing(instructions: instructions, with: Part1Wrapper.self).password)")
 print("Part 2: \(board.performing(instructions: instructions, with: Part2Wrapper.self).password)")
-
