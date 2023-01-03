@@ -284,30 +284,23 @@ struct Board: CustomStringConvertible {
   }
 
   mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
-    if wrapperType == Part2Wrapper.self {
-      print(self)
-      print()
-    }
     switch instruction {
     case .tiles(let tiles):
-      let wrapper = Wrapper(fields: fields, position: position, facing: facing)
       loop:
       for _ in 0..<tiles {
+        let wrapper = Wrapper(fields: fields, position: position, facing: facing)
         var next = position + Vec2(facing)
-        wrapper.wrap(current: position, next: &next, facing: &facing)
+        var nextFacing = facing
+        wrapper.wrap(current: position, next: &next, facing: &nextFacing)
         let row = fields.rows[next.y]
         switch row[min(row.count - 1, next.x)] {
-          case .space: position = next
+          case .space: (position, facing) = (next, nextFacing)
           case .solid: break loop
           case .border: fatalError("Cannot move to border position \(next)")
         }
       }
     case .turn(let turn):
       facing = facing + turn
-    }
-    if wrapperType == Part2Wrapper.self {
-      print(self)
-      print()
     }
   }
 
@@ -350,9 +343,11 @@ struct Part2Wrapper: WrapperProtocol {
 
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction) {
     // Check that we are actually out of range
-    let rowRange = fields.rows[next.y].boardRange
-    let colRange = fields.columns[next.x].boardRange
-    guard !rowRange.contains(next.y) || !colRange.contains(next.x) else { return }
+    if next.y >= 0 && next.y < fields.rows.count && next.x >= 0 && next.x < fields.columns.count {
+      let rowRange = fields.rows[next.y].boardRange
+      let colRange = fields.columns[next.x].boardRange
+      guard !colRange.contains(next.y) || !rowRange.contains(next.x) else { return }
+    }
     // Compute the cube face and normal we are currently in
     let mapPos = current / fields.cubeSize
     guard let cubeRotation = fields.cubeMap[mapPos] else { fatalError("No cube normal mapped for \(mapPos) (cube map: \(fields.cubeMap))") }
