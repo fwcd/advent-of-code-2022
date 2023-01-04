@@ -1,0 +1,3 @@
+#!/bin/bash
+
+# Do nothing, we assume a C++ compiler is installed.

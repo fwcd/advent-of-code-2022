@@ -27,7 +27,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 20: Objective-C
 - [x] Day 21: Prolog
 - [x] Day 22: Swift
-- [ ] Day 23
+- [ ] Day 23: C++
 - [ ] Day 24
 - [ ] Day 25
 
