@@ -59,12 +59,13 @@ struct Position {
 };
 
 /** The state of a (dynamically sized) board. */
+template <typename T>
 class Board {
 public:
-  Board(int width, int height) : _width(width), _height(height) {
+  Board(int width, int height, T initialValue) : _width(width), _height(height) {
     fields.reserve(width * height);
     for (int i = 0; i < width * height; i++) {
-      fields.push_back(false);
+      fields.push_back(initialValue);
     }
   }
 
@@ -81,19 +82,29 @@ public:
   }
 
   /** Computes the state of the board after a single round. */
-  Board next() const {
-    Board result {width(), height()};
+  Board<bool> next() const {
+    Board<bool> result {width(), height(), false};
+    Board<int> dibs {width(), height(), 0};
+
     for (int y {0}; y < height(); y++) {
       for (int x {0}; x < width(); x++) {
         const Position pos {x, y};
         if ((*this)[pos]) {
           const std::optional<Direction> dir {directionToMove(pos)};
           if (dir.has_value()) {
-            result[pos + *dir] = true;
+            dibs[pos + *dir] += 1;
           }
         }
       }
     }
+
+    for (int y {0}; y < height(); y++) {
+      for (int x {0}; x < width(); x++) {
+        const Position pos {x, y};
+        result[pos] = dibs[pos] == 1;
+      }
+    }
+
     return result;
   }
 
@@ -107,12 +118,12 @@ public:
   }
 
   /** Returns a const bit reference to the field at the given position. */
-  std::vector<bool>::const_reference operator[](Position pos) const {
+  typename std::vector<T>::const_reference operator[](Position pos) const {
     return fields[index(pos)];
   }
 
   /** Returns a bit reference to the field at the given position. */
-  std::vector<bool>::reference operator[](Position pos) {
+  typename std::vector<T>::reference operator[](Position pos) {
     return fields[index(pos)];
   }
 
@@ -128,7 +139,7 @@ public:
 private:
   int _width;
   int _height;
-  std::vector<bool> fields;
+  std::vector<T> fields;
 
   /** Finds the index of the given position in the internal bit vector. */
   constexpr int index(Position pos) const {
@@ -137,10 +148,10 @@ private:
 };
 
 /** Outputs a prettyprinted representation of the board to the given output stream. */
-std::ostream &operator<<(std::ostream &os, const Board &board) {
+std::ostream &operator<<(std::ostream &os, const Board<bool> &board) {
   for (int y {0}; y < board.height(); y++) {
     for (int x {0}; x < board.width(); x++) {
-      os << board[{x, y}];
+      os << (board[{x, y}] ? '#' : '.');
     }
     os << std::endl;
   }
@@ -161,10 +172,10 @@ std::vector<std::string> readInput(const std::string &filePath = "resources/demo
 }
 
 /** Parses a board from the given lines. */
-Board parseBoard(const std::vector<std::string> &lines) {
+Board<bool> parseBoard(const std::vector<std::string> &lines) {
   int width = lines[0].size();
   int height = lines.size();
-  Board board {width, height};
+  Board<bool> board {width, height, false};
   for (int y {0}; y < height; y++) {
     for (int x {0}; x < width; x++) {
       board[{x, y}] = lines[y][x] == '#';
@@ -175,6 +186,7 @@ Board parseBoard(const std::vector<std::string> &lines) {
 
 int main() {
   const std::vector<std::string> lines {readInput()};
-  Board board {parseBoard(lines)};
+  Board<bool> board {parseBoard(lines)};
+  std::cout << board.after(10);
   return 0;
 }
