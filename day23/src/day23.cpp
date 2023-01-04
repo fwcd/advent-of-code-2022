@@ -1,4 +1,5 @@
 #include <array>
+#include <cassert>
 #include <initializer_list>
 #include <iostream>
 #include <fstream>
@@ -24,6 +25,12 @@ struct Direction {
     return {-dx, -dy};
   }
 };
+
+/** Outputs a prettyprinted representation of the direction to the given output stream. */
+std::ostream &operator<<(std::ostream &os, const Direction dir) {
+  os << '{' << dir.dx << ", " << dir.dy << '}';
+  return os;
+}
 
 constexpr Direction SOUTH {0, 1};
 constexpr Direction EAST {1, 0};
@@ -58,6 +65,12 @@ struct Position {
   }
 };
 
+/** Outputs a prettyprinted representation of the position to the given output stream. */
+std::ostream &operator<<(std::ostream &os, const Position board) {
+  os << '{' << board.x << ", " << board.y << '}';
+  return os;
+}
+
 /** The state of a (dynamically sized) board. */
 template <typename T>
 class Board {
@@ -72,17 +85,23 @@ public:
   /** Computes the state of the board after a single round. */
   Board<bool> next() const {
     Board<bool> result {width(), height(), false};
-    Board<int> dibs {width(), height(), 0};
+    Board<std::vector<Position>> dibs {width(), height(), {}};
+
+    result.cardinalOffset = (result.cardinalOffset + 1) % CARDINALS.size();
 
     for (int y {0}; y < height(); y++) {
       for (int x {0}; x < width(); x++) {
         const Position pos {x, y};
         if ((*this)[pos]) {
-          const std::optional<Direction> dir {directionToMove(pos)};
-          if (dir.has_value()) {
-            dibs[pos + *dir] += 1;
+          if (isIsolated(pos)) {
+            result[pos] = true;
           } else {
-            dibs[pos] += 1;
+            const std::optional<Direction> dir {directionToMove(pos)};
+            if (dir.has_value()) {
+              dibs[pos + *dir].push_back(pos);
+            } else {
+              result[pos] = true;
+            }
           }
         }
       }
@@ -91,7 +110,13 @@ public:
     for (int y {0}; y < height(); y++) {
       for (int x {0}; x < width(); x++) {
         const Position pos {x, y};
-        result[pos] = dibs[pos] == 1;
+        if (dibs[pos].size() == 1) {
+          result[pos] = true;
+        } else {
+          for (const Position original : dibs[pos]) {
+            result[original] = true;
+          }
+        }
       }
     }
 
@@ -129,10 +154,12 @@ public:
 private:
   int _width;
   int _height;
+  int cardinalOffset;
   std::vector<T> fields;
 
   /** Finds the index of the given position in the internal bit vector. */
   constexpr int index(Position pos) const {
+    assert(inBounds(pos));
     return pos.y * width() + pos.x;
   }
 
@@ -141,13 +168,33 @@ private:
     return pos.x >= 0 && pos.x < width() && pos.y >= 0 && pos.y < height();
   }
 
+  /** Whether the given field can propose moving into the given cardinal direction. */
+  bool canProposeDirection(Position pos, Direction cardinal) const {
+    for (const Position neighbor : pos.neighbors(cardinal)) {
+      if ((*this)[neighbor]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  /** Whether the given field is not surrounded by any occupied fields. */
+  bool isIsolated(Position pos) const {
+    for (int i {0}; i < CARDINALS.size(); i++) {
+      const Direction cardinal {CARDINALS[(i + cardinalOffset) % CARDINALS.size()]};
+      if (!canProposeDirection(pos, cardinal)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
   /** The next direction to move in for the given field. */
   std::optional<Direction> directionToMove(Position pos) const {
-    for (const Direction cardinal : CARDINALS) {
-      for (const Position neighbor : pos.neighbors(cardinal)) {
-        if (inBounds(neighbor) && (*this)[neighbor]) {
-          return cardinal;
-        }
+    for (int i {0}; i < CARDINALS.size(); i++) {
+      const Direction cardinal {CARDINALS[(i + cardinalOffset) % CARDINALS.size()]};
+      if (canProposeDirection(pos, cardinal)) {
+        return cardinal;
       }
     }
     return std::nullopt;
@@ -155,6 +202,19 @@ private:
 };
 
 /** Outputs a prettyprinted representation of the board to the given output stream. */
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const Board<T> &board) {
+  for (int y {0}; y < board.height(); y++) {
+    for (int x {0}; x < board.width(); x++) {
+      os << board[{x, y}];
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
+/** Outputs a prettyprinted representation of the board to the given output stream. */
+template <>
 std::ostream &operator<<(std::ostream &os, const Board<bool> &board) {
   for (int y {0}; y < board.height(); y++) {
     for (int x {0}; x < board.width(); x++) {
@@ -179,7 +239,7 @@ std::vector<std::string> readInput(const std::string &filePath = "resources/demo
 }
 
 /** Parses a board from the given lines. */
-Board<bool> parseBoard(const std::vector<std::string> &lines, int padding) {
+Board<bool> parseBoard(const std::vector<std::string> &lines, int padding = 0) {
   int width {static_cast<int>(lines[0].size())};
   int height {static_cast<int>(lines.size())};
   Board<bool> board {width + 2 * padding, height + 2 * padding, false};
@@ -195,14 +255,10 @@ Board<bool> parseBoard(const std::vector<std::string> &lines, int padding) {
 
 int main() {
   const std::vector<std::string> lines {readInput()};
-  const int padding {10};
+  int padding {10};
   Board<bool> board {parseBoard(lines, padding)};
 
-  std::cout << board << std::endl;
-  for (int i {0}; i < 10; i++) {
-    board = board.next();
-    std::cout << board << std::endl;
-  }
+  std::cout << board.after(10) << std::endl;
 
   return 0;
 }
