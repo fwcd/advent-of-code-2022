@@ -3,4 +3,4 @@
 set -e
 cd "$(dirname $0)"
 
-make run
+cmake --build build && build/day23

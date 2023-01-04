@@ -1,3 +1,28 @@
 #!/bin/bash
 
-# Do nothing, we assume a C++ compiler is installed.
+set -e
+cd "$(dirname $0)"
+
+case $(uname -s) in
+  Darwin)
+    echo "==> Installing CMake via Homebrew..."
+    brew install --cask cmake
+    ;;
+  Linux)
+    . /etc/os-release
+    if [ "$ID_LIKE" == debian ]; then
+      echo "==> Installing CMake via APT..."
+      sudo apt-get install -y cmake
+    else
+      echo "Unsupported Linux distribution!"
+      exit 1
+    fi
+    ;;
+  *)
+    echo "Unsupported OS!"
+    exit 1
+    ;;
+esac
+
+echo "==> Running CMake..."
+cmake -B build
