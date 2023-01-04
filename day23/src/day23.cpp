@@ -71,21 +71,74 @@ std::ostream &operator<<(std::ostream &os, const Position board) {
   return os;
 }
 
-/** The state of a (dynamically sized) board. */
+/** A 2D map of fields. */
 template <typename T>
-class Board {
+class Fields {
 public:
-  Board(int width, int height, T initialValue) : _width(width), _height(height) {
+  Fields(int width, int height, T initialValue) : _width(width), _height(height) {
     fields.reserve(width * height);
     for (int i = 0; i < width * height; i++) {
       fields.push_back(initialValue);
     }
   }
 
+  /** Returns a const bit reference to the field at the given position. */
+  typename std::vector<T>::const_reference operator[](Position pos) const {
+    return fields[index(pos)];
+  }
+
+  /** Returns a bit reference to the field at the given position. */
+  typename std::vector<T>::reference operator[](Position pos) {
+    return fields[index(pos)];
+  }
+
+  /** The number of columns on the board. */
+  constexpr int width() const {
+    return _width;
+  }
+
+  /** The number of rows on the board. */
+  constexpr int height() const {
+    return _height;
+  }
+private:
+  int _width;
+  int _height;
+  std::vector<T> fields;
+
+  /** Finds the index of the given position in the internal bit vector. */
+  constexpr int index(Position pos) const {
+    assert(inBounds(pos));
+    return pos.y * width() + pos.x;
+  }
+
+  /** Whether the given position is within the board's bounds. */
+  constexpr bool inBounds(Position pos) const {
+    return pos.x >= 0 && pos.x < width() && pos.y >= 0 && pos.y < height();
+  }
+};
+
+/** Outputs a prettyprinted representation of the field map to the given output stream. */
+template <typename T>
+std::ostream &operator<<(std::ostream &os, const Fields<T> &fields) {
+  for (int y {0}; y < fields.height(); y++) {
+    for (int x {0}; x < fields.width(); x++) {
+      os << fields[{x, y}];
+    }
+    os << std::endl;
+  }
+  return os;
+}
+
+/** The game state, i.e. a 2D map of elves. */
+class Board {
+public:
+  Board(Fields<bool> fields) : fields(fields) {}
+
   /** Computes the state of the board after a single round. */
-  Board<bool> next() const {
-    Board<bool> result {width(), height(), false};
-    Board<std::vector<Position>> dibs {width(), height(), {}};
+  Board next() const {
+    Board result {{width(), height(), false}};
+    Fields<std::vector<Position>> dibs {width(), height(), {}};
 
     result.cardinalOffset = (result.cardinalOffset + 1) % CARDINALS.size();
 
@@ -133,40 +186,27 @@ public:
   }
 
   /** Returns a const bit reference to the field at the given position. */
-  typename std::vector<T>::const_reference operator[](Position pos) const {
-    return fields[index(pos)];
+  std::vector<bool>::const_reference operator[](Position pos) const {
+    return fields[pos];
   }
 
   /** Returns a bit reference to the field at the given position. */
-  typename std::vector<T>::reference operator[](Position pos) {
-    return fields[index(pos)];
+  std::vector<bool>::reference operator[](Position pos) {
+    return fields[pos];
   }
 
   /** The number of columns on the board. */
   constexpr int width() const {
-    return _width;
+    return fields.width();
   }
 
   /** The number of rows on the board. */
   constexpr int height() const {
-    return _height;
+    return fields.height();
   }
 private:
-  int _width;
-  int _height;
+  Fields<bool> fields;
   int cardinalOffset;
-  std::vector<T> fields;
-
-  /** Finds the index of the given position in the internal bit vector. */
-  constexpr int index(Position pos) const {
-    assert(inBounds(pos));
-    return pos.y * width() + pos.x;
-  }
-
-  /** Whether the given position is within the board's bounds. */
-  constexpr bool inBounds(Position pos) const {
-    return pos.x >= 0 && pos.x < width() && pos.y >= 0 && pos.y < height();
-  }
 
   /** Whether the given field can propose moving into the given cardinal direction. */
   bool canProposeDirection(Position pos, Direction cardinal) const {
@@ -202,20 +242,7 @@ private:
 };
 
 /** Outputs a prettyprinted representation of the board to the given output stream. */
-template <typename T>
-std::ostream &operator<<(std::ostream &os, const Board<T> &board) {
-  for (int y {0}; y < board.height(); y++) {
-    for (int x {0}; x < board.width(); x++) {
-      os << board[{x, y}];
-    }
-    os << std::endl;
-  }
-  return os;
-}
-
-/** Outputs a prettyprinted representation of the board to the given output stream. */
-template <>
-std::ostream &operator<<(std::ostream &os, const Board<bool> &board) {
+std::ostream &operator<<(std::ostream &os, const Board &board) {
   for (int y {0}; y < board.height(); y++) {
     for (int x {0}; x < board.width(); x++) {
       os << (board[{x, y}] ? '#' : '.');
@@ -239,10 +266,10 @@ std::vector<std::string> readInput(const std::string &filePath = "resources/demo
 }
 
 /** Parses a board from the given lines. */
-Board<bool> parseBoard(const std::vector<std::string> &lines, int padding = 0) {
+Board parseBoard(const std::vector<std::string> &lines, int padding = 0) {
   int width {static_cast<int>(lines[0].size())};
   int height {static_cast<int>(lines.size())};
-  Board<bool> board {width + 2 * padding, height + 2 * padding, false};
+  Board board {{width + 2 * padding, height + 2 * padding, false}};
 
   for (int y {0}; y < height; y++) {
     for (int x {0}; x < width; x++) {
@@ -256,7 +283,7 @@ Board<bool> parseBoard(const std::vector<std::string> &lines, int padding = 0) {
 int main() {
   const std::vector<std::string> lines {readInput()};
   int padding {10};
-  Board<bool> board {parseBoard(lines, padding)};
+  Board board {parseBoard(lines, padding)};
 
   std::cout << board.after(10) << std::endl;
 
