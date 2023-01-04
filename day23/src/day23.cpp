@@ -1,4 +1,5 @@
 #include <array>
+#include <algorithm>
 #include <cassert>
 #include <initializer_list>
 #include <iostream>
@@ -55,6 +56,26 @@ struct Position {
   /** The position after subtracting the given direction. */
   constexpr Position operator-(Direction dir) const {
     return {x - dir.dx, y - dir.dy};
+  }
+
+  /** The position after adding the given position. */
+  constexpr Position operator+(Position rhs) const {
+    return {x + rhs.x, y + rhs.y};
+  }
+
+  /** The position after subtracting the given position. */
+  constexpr Position operator-(Position rhs) const {
+    return {x - rhs.x, y - rhs.y};
+  }
+
+  /** The elementwise minimum of this and the given position. */
+  constexpr Position min(Position rhs) const {
+    return {std::min(x, rhs.x), std::min(y, rhs.y)};
+  }
+
+  /** The elementwise maximum of this and the given position. */
+  constexpr Position max(Position rhs) const {
+    return {std::max(x, rhs.x), std::max(y, rhs.y)};
   }
 
   /** Fetches the three neighbors in the given cardinal direction. */
@@ -185,6 +206,50 @@ public:
     return result;
   }
 
+  /** Finds the top-left corner of the box bounding the occupied fields. */
+  Position topLeft() const {
+    Position result {width() - 1, height() - 1};
+    for (int y {0}; y < height(); y++) {
+      for (int x {0}; x < width(); x++) {
+        const Position pos {x, y};
+        if ((*this)[pos]) {
+          result = pos.min(result);
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Finds the bottom-right corner of the box bounding the occupied fields. */
+  Position bottomRight() const {
+    Position result {0, 0};
+    for (int y {0}; y < height(); y++) {
+      for (int x {0}; x < width(); x++) {
+        const Position pos {x, y};
+        if ((*this)[pos]) {
+          result = pos.max(result);
+        }
+      }
+    }
+    return result;
+  }
+
+  /** Counts the number of empty tiles within the bounding box of occupied fields. */
+  int emptyGroundTilesInBoundingBox() {
+    const Position tl {topLeft()};
+    const Position br {bottomRight()};
+    int count {0};
+    for (int y {tl.y}; y <= br.y; y++) {
+      for (int x {tl.x}; x <= br.x; x++) {
+        const Position pos {x, y};
+        if (!(*this)[pos]) {
+          count++;
+        }
+      }
+    }
+    return count;
+  }
+
   /** Returns a const bit reference to the field at the given position. */
   std::vector<bool>::const_reference operator[](Position pos) const {
     return fields[pos];
@@ -285,7 +350,7 @@ int main() {
   int padding {10};
   Board board {parseBoard(lines, padding)};
 
-  std::cout << board.after(10) << std::endl;
+  std::cout << "Part 1: " << board.after(10).emptyGroundTilesInBoundingBox() << std::endl;
 
   return 0;
 }
