@@ -179,25 +179,30 @@ std::vector<std::string> readInput(const std::string &filePath = "resources/demo
 }
 
 /** Parses a board from the given lines. */
-Board<bool> parseBoard(const std::vector<std::string> &lines) {
-  int width = lines[0].size();
-  int height = lines.size();
-  Board<bool> board {width, height, false};
+Board<bool> parseBoard(const std::vector<std::string> &lines, int padding) {
+  int width {static_cast<int>(lines[0].size())};
+  int height {static_cast<int>(lines.size())};
+  Board<bool> board {width + 2 * padding, height + 2 * padding, false};
+
   for (int y {0}; y < height; y++) {
     for (int x {0}; x < width; x++) {
-      board[{x, y}] = lines[y][x] == '#';
+      board[{x + padding, y + padding}] = lines[y][x] == '#';
     }
   }
+
   return board;
 }
 
 int main() {
   const std::vector<std::string> lines {readInput()};
-  Board<bool> board {parseBoard(lines)};
+  const int padding {10};
+  Board<bool> board {parseBoard(lines, padding)};
+
   std::cout << board << std::endl;
   for (int i {0}; i < 10; i++) {
     board = board.next();
     std::cout << board << std::endl;
   }
+
   return 0;
 }
