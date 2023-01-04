@@ -69,18 +69,6 @@ public:
     }
   }
 
-  /** The next direction to move in for the given field. */
-  std::optional<Direction> directionToMove(Position pos) const {
-    for (const Direction cardinal : CARDINALS) {
-      for (const Position neighbor : pos.neighbors(cardinal)) {
-        if ((*this)[neighbor]) {
-          return cardinal;
-        }
-      }
-    }
-    return std::nullopt;
-  }
-
   /** Computes the state of the board after a single round. */
   Board<bool> next() const {
     Board<bool> result {width(), height(), false};
@@ -93,6 +81,8 @@ public:
           const std::optional<Direction> dir {directionToMove(pos)};
           if (dir.has_value()) {
             dibs[pos + *dir] += 1;
+          } else {
+            dibs[pos] += 1;
           }
         }
       }
@@ -145,6 +135,23 @@ private:
   constexpr int index(Position pos) const {
     return pos.y * width() + pos.x;
   }
+
+  /** Whether the given position is within the board's bounds. */
+  constexpr bool inBounds(Position pos) const {
+    return pos.x >= 0 && pos.x < width() && pos.y >= 0 && pos.y < height();
+  }
+
+  /** The next direction to move in for the given field. */
+  std::optional<Direction> directionToMove(Position pos) const {
+    for (const Direction cardinal : CARDINALS) {
+      for (const Position neighbor : pos.neighbors(cardinal)) {
+        if (inBounds(neighbor) && (*this)[neighbor]) {
+          return cardinal;
+        }
+      }
+    }
+    return std::nullopt;
+  }
 };
 
 /** Outputs a prettyprinted representation of the board to the given output stream. */
@@ -187,6 +194,10 @@ Board<bool> parseBoard(const std::vector<std::string> &lines) {
 int main() {
   const std::vector<std::string> lines {readInput()};
   Board<bool> board {parseBoard(lines)};
-  std::cout << board.after(10);
+  std::cout << board << std::endl;
+  for (int i {0}; i < 10; i++) {
+    board = board.next();
+    std::cout << board << std::endl;
+  }
   return 0;
 }
