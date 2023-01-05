@@ -114,6 +114,16 @@ public:
     return fields[index(pos)];
   }
 
+  /** Returns whether this map is equal to the given map. */
+  bool operator==(Fields rhs) const {
+    return fields == rhs.fields;
+  }
+
+  /** Returns whether this map is not equal to the given map. */
+  bool operator!=(Fields rhs) const {
+    return fields != rhs.fields;
+  }
+
   /** The number of columns on the board. */
   constexpr int width() const {
     return _width;
@@ -251,6 +261,19 @@ public:
     return count;
   }
 
+  /** Finds the number of rounds until the board no longer changes. */
+  int findFixedPoint() const {
+    int rounds {0};
+    Board board {*this};
+    Board next {*this};
+    do {
+      board = next;
+      next = board.next();
+      rounds++;
+    } while (board.fields != next.fields);
+    return rounds;
+  }
+
   /** Returns a const bit reference to the field at the given position. */
   std::vector<bool>::const_reference operator[](Position pos) const {
     return fields[pos];
@@ -352,10 +375,11 @@ Board parseBoard(const std::vector<std::string> &lines, int padding = 0) {
 
 int main() {
   const std::vector<std::string> lines {readInput()};
-  int padding {10};
+  int padding {60};
   Board board {parseBoard(lines, padding)};
 
   std::cout << "Part 1: " << board.after(10).emptyGroundTilesInBoundingBox() << std::endl;
+  std::cout << "Part 2: " << board.findFixedPoint() << std::endl;
 
   return 0;
 }
