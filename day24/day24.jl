@@ -70,3 +70,6 @@ for i in 1:10
     global state = next_state(state)
     println(state)
 end
+
+# TODO: Implement Dijkstra
+# TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
