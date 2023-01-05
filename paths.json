@@ -94,6 +94,6 @@
   },
   {
     "lang": "julia",
-    "path": "day24/src/day24.jl"
+    "path": "day24/day24.jl"
   }
 ]
