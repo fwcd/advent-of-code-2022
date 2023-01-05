@@ -12,15 +12,6 @@ enum Direction: Int, Hashable, CaseIterable {
     }
   }
 
-  var arrow: Character {
-    switch self {
-    case .right: return ">"
-    case .down:  return "v"
-    case .left:  return "<"
-    case .up:    return "^"
-    }
-  }
-
   var rotation: Mat3 {
     switch self {
     case .right: return .rotZ

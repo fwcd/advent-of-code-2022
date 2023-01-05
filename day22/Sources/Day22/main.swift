@@ -80,27 +80,12 @@ protocol WrapperProtocol {
   func wrap(current: Vec2, next: inout Vec2, facing: inout Direction)
 }
 
-struct Board: CustomStringConvertible {
+struct Board {
   var fields: Fields
-  var position: Vec2 {
-    willSet {
-      track[position] = facing
-    }
-  }
+  var position: Vec2
   var facing: Direction = .right
-  var track: [Vec2: Direction] = [:]
 
-  var password: Int {
-    1000 * (position.y + 1) + 4 * (position.x + 1) + facing.rawValue
-  }
-  var description: String {
-    fields.rows
-      .enumerated()
-      .map { (y, row) in String(row.enumerated().map { (x, f) in
-        track[Vec2(x: x, y: y)]?.arrow ?? f.rawValue
-      }) }
-      .joined(separator: "\n")
-  }
+  var password: Int { 1000 * (position.y + 1) + 4 * (position.x + 1) + facing.rawValue }
 
   mutating func perform<Wrapper: WrapperProtocol>(instruction: Instruction, with wrapperType: Wrapper.Type) {
     switch instruction {
