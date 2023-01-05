@@ -91,5 +91,9 @@
   {
     "lang": "clike",
     "path": "day23/src/day23.cpp"
+  },
+  {
+    "lang": "julia",
+    "path": "day24/src/day24.jl"
   }
 ]
