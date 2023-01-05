@@ -3,4 +3,4 @@
 set -e
 cd "$(dirname $0)"
 
-julia src/day24.jl
+./day24.jl
