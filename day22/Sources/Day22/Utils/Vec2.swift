@@ -6,21 +6,17 @@ struct Vec2: Hashable, CustomStringConvertible {
 
   static var zero = Self()
 
-  static func +(lhs: Self, rhs: Self) -> Self {
-    Self(x: lhs.x + rhs.x, y: lhs.y + rhs.y)
-  }
+  func zip(_ rhs: Self, with f: (Int, Int) -> Int) -> Self { return Self(x: f(x, rhs.x), y: f(y, rhs.y)) }
 
-  static func -(lhs: Self, rhs: Self) -> Self {
-    Self(x: lhs.x - rhs.x, y: lhs.y - rhs.y)
-  }
+  func map(_ f: (Int) -> Int) -> Self { return Self(x: f(x), y: f(y)) }
 
-  static func *(lhs: Self, rhs: Int) -> Self {
-    Self(x: lhs.x * rhs, y: lhs.y * rhs)
-  }
+  static func +(lhs: Self, rhs: Self) -> Self { lhs.zip(rhs, with: +) }
 
-  static func /(lhs: Self, rhs: Int) -> Self {
-    Self(x: lhs.x / rhs, y: lhs.y / rhs)
-  }
+  static func -(lhs: Self, rhs: Self) -> Self { lhs.zip(rhs, with: -) }
+
+  static func *(lhs: Self, rhs: Int) -> Self { lhs.map { $0 * rhs } }
+
+  static func /(lhs: Self, rhs: Int) -> Self { lhs.map { $0 / rhs } }
 }
 
 extension Vec2 {
