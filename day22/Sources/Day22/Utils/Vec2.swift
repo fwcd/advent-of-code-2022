@@ -1,12 +1,11 @@
 struct Vec2: Hashable, CustomStringConvertible {
+  static let zero = Self()
+
+  func zip(_ rhs: Self, with f: (Int, Int) -> Int) -> Self { return Self(x: f(x, rhs.x), y: f(y, rhs.y)) }
   var x: Int = 0
   var y: Int = 0
 
   var description: String { "(\(x), \(y))" }
-
-  static var zero = Self()
-
-  func zip(_ rhs: Self, with f: (Int, Int) -> Int) -> Self { return Self(x: f(x, rhs.x), y: f(y, rhs.y)) }
 
   func map(_ f: (Int) -> Int) -> Self { return Self(x: f(x), y: f(y)) }
 

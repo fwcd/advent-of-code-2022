@@ -1,11 +1,11 @@
 struct Vec3: Hashable, CustomStringConvertible {
+  static let zero = Self()
+
   var x: Int = 0
   var y: Int = 0
   var z: Int = 0
 
   var description: String { "(\(x), \(y), \(z))" }
-
-  static var zero = Self()
 
   func dot(_ rhs: Self) -> Int {
     x * rhs.x + y * rhs.y + z * rhs.z

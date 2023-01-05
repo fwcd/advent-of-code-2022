@@ -1,4 +1,9 @@
 struct Mat3: Hashable, CustomStringConvertible {
+  static let identity = Self(e0: Vec3(x: 1, y: 0, z: 0), e1: Vec3(x: 0, y: 1, z: 0), e2: Vec3(x: 0, y: 0, z: 1))
+  static let rotX = Self(e0: Vec3(x: 1, y:  0, z: 0), e1: Vec3(x: 0, y:  0, z: 1), e2: Vec3(x: 0, y: -1, z: 0))
+  static let rotY = Self(e0: Vec3(x: 0, y: 0, z: -1), e1: Vec3(x: 0, y: 1, z: 0), e2: Vec3(x: 1, y: 0, z: 0))
+  static var rotZ = Self(e0: Vec3(x: 0, y: 1, z: 0), e1: Vec3(x: -1, y: 0, z: 0), e2: Vec3(x: 0, y: 0, z: 1))
+
   var e0: Vec3
   var e1: Vec3
   var e2: Vec3
@@ -12,35 +17,6 @@ struct Mat3: Hashable, CustomStringConvertible {
       e0: Vec3(x: e0.x, y: e1.x, z: e2.x),
       e1: Vec3(x: e0.y, y: e1.y, z: e2.y),
       e2: Vec3(x: e0.z, y: e1.z, z: e2.z)
-    )
-  }
-
-  static var identity: Self {
-    Self(
-      e0: Vec3(x: 1, y: 0, z: 0),
-      e1: Vec3(x: 0, y: 1, z: 0),
-      e2: Vec3(x: 0, y: 0, z: 1)
-    )
-  }
-  static var rotX: Self {
-    Self(
-      e0: Vec3(x: 1, y:  0, z: 0),
-      e1: Vec3(x: 0, y:  0, z: 1),
-      e2: Vec3(x: 0, y: -1, z: 0)
-    )
-  }
-  static var rotY: Self {
-    Self(
-      e0: Vec3(x: 0, y: 0, z: -1),
-      e1: Vec3(x: 0, y: 1, z:  0),
-      e2: Vec3(x: 1, y: 0, z:  0)
-    )
-  }
-  static var rotZ: Self {
-    Self(
-      e0: Vec3(x:  0, y: 1, z: 0),
-      e1: Vec3(x: -1, y: 0, z: 0),
-      e2: Vec3(x:  0, y: 0, z: 1)
     )
   }
 
