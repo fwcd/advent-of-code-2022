@@ -4,6 +4,7 @@
 #include <initializer_list>
 #include <iostream>
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <utility>
 #include <optional>
@@ -318,14 +319,18 @@ std::ostream &operator<<(std::ostream &os, const Board &board) {
 }
 
 /** Reads the lines from the given input file. */
-std::vector<std::string> readInput(const std::string &filePath = "resources/demo.txt") {
+std::vector<std::string> readInput(const std::string &filePath = "resources/input.txt") {
   std::ifstream stream;
   stream.open(filePath);
+  if (!stream.is_open()) {
+    throw new std::runtime_error("Could not open input file!");
+  }
   std::vector<std::string> lines;
   std::string line;
-  while (stream.good()) {
-    stream >> line;
-    lines.push_back(line);
+  while (std::getline(stream, line)) {
+    if (!line.empty()) {
+      lines.push_back(line);
+    }
   }
   return lines;
 }
