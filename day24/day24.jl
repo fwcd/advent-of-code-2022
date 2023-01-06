@@ -117,22 +117,24 @@ end
 
 function a_star_search(state::State)
     queue = DataStructures.PriorityQueue{Tuple{State,Int},Int}()
+    visited = Set{State}()
     queue[(state, 0)] = estimate_remaining(state)
     while !isempty(queue)
-        node = DataStructures.peek(queue)
-        current = node[1][1]
-        length = node[1][2]
-        cost = node[2]
+        ((current, len), cost) = DataStructures.peek(queue)
+        push!(visited, current)
+        if mod(length(visited), 10_000) == 0
+            println("Searching ", current.pos, " (", len, "/", cost, ")")
+        end
         DataStructures.dequeue!(queue)
-        println("Searching at ", current.pos, " with length ", length, " and cost ", cost)
-        println(pretty(current))
         if current.pos == current.size
-            return (current, length)
+            return (current, len)
         end
         for child in childs(current)
-            child_length = length + 1
-            child_cost = child_length + estimate_remaining(child)
-            DataStructures.enqueue!(queue, (child, child_length), child_cost)
+            if !in(child, visited)
+                child_len = len + 1
+                child_cost = child_len + estimate_remaining(child)
+                DataStructures.enqueue!(queue, (child, child_len), child_cost)
+            end
         end
     end
     throw("No solution found")
@@ -161,15 +163,14 @@ function parse_input(lines::Vector{String})
     return State(nothing, blizzards, size)
 end
 
-lines = open("resources/demo2.txt") do f
+lines = open("resources/input.txt") do f
     readlines(f)
 end
 
 state = parse_input(lines)
-result = a_star_search(state)
-final_state = result[1]
-final_length = result[2]
-println("Final state: ", final_state)
-println("Final length: ", final_length)
+(final_state, final_length) = a_star_search(state)
+
+println(pretty(final_state))
+println("Part 1: ", final_length + 1)
 
 # TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
