@@ -45,6 +45,8 @@ Some days that need additional configuration also have environment-related scrip
 
 This standardized pattern lets CI use a single workflow (per OS) across all days. Additionally, they make it easy to get started developing locally even across the range of different languages, build tools and package managers involved.
 
+> Note that some bootstrap scripts are still geared around CI use, so you may still prefer to install the corresponding toolchain using your package manager manually.
+
 ## Previous years
 
 My solutions to the previous challenges can be found here:
