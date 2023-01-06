@@ -12,20 +12,29 @@ case $(uname -s) in
     echo "==> Setting up temporary directory for Julia download..."
     tmpdir="$(mktemp -d)"
     trap 'rm -rf -- "$tmpdir"' EXIT
-    cd "$tmpdir"
 
-    echo "==> Downloading Julia..."
-    archivename="julia-1.8.4-linux-x86_64.tar.gz"
-    url="https://julialang-s3.julialang.org/bin/linux/x64/1.8/$archivename"
-    curl -OL "$url"
+    (
+      cd "$tmpdir"
 
-    echo "==> Installing Julia..."
-    destdir="$HOME/opt/julia"
-    mkdir -p "$destdir"
-    tar -xvf "$archivename" -C "$destdir" --strip-components 1
+      echo "==> Downloading Julia..."
+      archivename="julia-1.8.4-linux-x86_64.tar.gz"
+      url="https://julialang-s3.julialang.org/bin/linux/x64/1.8/$archivename"
+      curl -OL "$url"
+
+      destdir="$HOME/opt/julia"
+      echo "==> Installing Julia to $destdir..."
+      mkdir -p "$destdir"
+      tar -xvf "$archivename" -C "$destdir" --strip-components 1
+    )
     ;;
   *)
     echo "Unsupported OS!"
     exit 1
     ;;
 esac
+
+echo "==> Installing project dependencies..."
+julia --project=. -e "
+using Pkg
+Pkg.instantiate()
+"
