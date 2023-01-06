@@ -15,7 +15,7 @@ case $(uname -s) in
     cd "$tmpdir"
 
     echo "==> Downloading Julia..."
-    archivename="https://julialang-s3.julialang.org/bin/linux/x64/1.8/julia-1.8.4-linux-x86_64.tar.gz"
+    archivename="julia-1.8.4-linux-x86_64.tar.gz"
     url="https://julialang-s3.julialang.org/bin/linux/x64/1.8/$archivename"
     curl -OL "$url"
 
