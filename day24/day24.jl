@@ -42,8 +42,12 @@ function in_bounds(pos::Vec2, size::Vec2)
     pos.x >= 1 && pos.x <= size.x && pos.y >= 1 && pos.y <= size.y
 end
 
+function blizzards_at(pos::Vec2, blizzards::Vector{Blizzard})
+    Iterators.filter(b -> b.pos == pos, blizzards)
+end
+
 function has_blizzard_at(pos::Vec2, blizzards::Vector{Blizzard})
-    Iterators.any(Iterators.map(b -> b.pos == pos, blizzards))
+    !Iterators.isempty(blizzards_at(pos, blizzards))
 end
 
 function next(blizzard::Blizzard, size::Vec2)
@@ -70,6 +74,38 @@ function childs(state::State)
     return Iterators.map(p -> State(p, blizzards, size), destinations)
 end
 
+function pretty_dir(dir::Vec2)
+    if dir == Vec2(1, 0)
+        '>'
+    elseif dir == Vec2(-1, 0)
+        '<'
+    elseif dir == Vec2(0, 1)
+        'v'
+    elseif dir == Vec2(0, -1)
+        '^'
+    else
+        nothing
+    end
+end
+
+function pretty(state::State)
+    Iterators.join(Iterators.map(y -> Iterators.join(Iterators.map(x -> begin
+        pos = Vec2(x, y)
+        blizzards = collect(blizzards_at(pos, state.blizzards))
+        if state.pos == pos
+            'E'
+        elseif length(blizzards) > 0
+            if length(blizzards) == 1
+                pretty_dir(blizzards[1].dir)
+            else
+                string(length(blizzards))
+            end
+        else
+            '.'
+        end
+    end, 1:state.size.x)), 1:state.size.y), "\n")
+end
+
 function estimate_remaining(state::State)
     delta = something(state.pos, Vec2(0, -1)) - state.size
     return abs(delta.x) + abs(delta.y)
@@ -85,6 +121,7 @@ function a_star_search(state::State)
         cost = node[2]
         DataStructures.dequeue!(queue)
         println("Searching at ", current.pos, " with length ", length, " and cost ", cost)
+        println(pretty(current))
         if current.pos == current.size
             return (current, length)
         end
