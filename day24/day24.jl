@@ -66,7 +66,11 @@ function childs(state::State)
     neighbors = if isnothing(state.pos)
         [nothing, Vec2(1, 1)]
     else
-        positions(state.pos - Vec2(1, 1), state.pos + Vec2(1, 1)) # includes pos itself
+        [
+            state.pos - Vec2(0, 1),
+            state.pos - Vec2(1, 0), state.pos, state.pos + Vec2(1, 0),
+            state.pos + Vec2(0, 1),
+        ]
     end
     size = state.size
     blizzards = next(state.blizzards, size)
