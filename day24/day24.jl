@@ -8,9 +8,14 @@ struct Vec2
     y::Int
 end
 
+struct Blizzard
+    pos::Vec2
+    dir::Union{Vec2,Nothing} # only (possibly) Nothing during parsing
+end
+
 struct State
     pos::Union{Vec2,Nothing}
-    blizzards::Vector{Tuple{Vec2, Vec2}}
+    blizzards::Vector{Blizzard}
     size::Vec2
 end
 
@@ -38,16 +43,20 @@ function in_bounds(pos::Vec2, size::Vec2)
     pos.x >= 1 && pos.x <= size.x && pos.y >= 1 && pos.y <= size.y
 end
 
-function has_blizzard_at(pos::Vec2, blizzards::Vector{Tuple{Vec2, Vec2}})
-    Iterators.any(Iterators.map(t -> t[1] == pos, blizzards))
+function has_blizzard_at(pos::Vec2, blizzards::Vector{Blizzard})
+    Iterators.any(Iterators.map(b -> b.pos == pos, blizzards))
 end
 
-function next_blizzards(blizzards::Vector{Tuple{Vec2, Vec2}}, size::Vec2)
-    collect(Iterators.map(t -> (wrap(t[1] + t[2], size), t[2]), blizzards))
+function next(blizzard::Blizzard, size::Vec2)
+    Blizzard(wrap(blizzard.pos + blizzard.dir, size), blizzard.dir)
+end
+
+function next(blizzards::Vector{Blizzard}, size::Vec2)
+    collect(Iterators.map(b -> next(b, size), blizzards))
 end
 
 function next(state::State)
-    State(state.pos, next_blizzards(state.blizzards, state.size), state.size)
+    State(state.pos, next(state.blizzards, state.size), state.size)
 end
 
 function childs(state::State)
@@ -57,7 +66,7 @@ function childs(state::State)
         positions(state.pos - Vec2(1, 1), state.pos + Vec2(1, 1)) # includes pos itself
     end
     size = state.size
-    blizzards = next_blizzards(state.blizzards, size)
+    blizzards = next(state.blizzards, size)
     destinations = Iterators.filter(p -> isnothing(p) || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
     return Iterators.map(p -> State(p, blizzards, size), destinations)
 end
@@ -80,8 +89,8 @@ function parse_input(lines::Vector{String})
     height = length(lines) - 2
     width = length(lines[1]) - 2
     size = Vec2(width, height)
-    parsed = Iterators.map(p -> (p, parse_dir(lines[p.y + 1][p.x + 1])), positions(size))
-    blizzards = collect(Iterators.filter(t -> !isnothing(t[2]), parsed))
+    parsed = Iterators.map(p -> Blizzard(p, parse_dir(lines[p.y + 1][p.x + 1])), positions(size))
+    blizzards = collect(Iterators.filter(b -> !isnothing(b.dir), parsed))
     return State(nothing, blizzards, size)
 end
 
