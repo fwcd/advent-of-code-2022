@@ -9,14 +9,20 @@ case $(uname -s) in
     brew install --cask julia
     ;;
   Linux)
-    . /etc/os-release
-    if [ "$ID_LIKE" == debian ]; then
-      echo "==> Installing Julia via APT..."
-      sudo apt-get install -y julia
-    else
-      echo "Unsupported Linux distribution!"
-      exit 1
-    fi
+    echo "==> Setting up temporary directory for Julia download..."
+    tmpdir="$(mktemp -d)"
+    trap 'rm -rf -- "$tmpdir"' EXIT
+    cd "$tmpdir"
+
+    echo "==> Downloading Julia..."
+    archivename="https://julialang-s3.julialang.org/bin/linux/x64/1.8/julia-1.8.4-linux-x86_64.tar.gz"
+    url="https://julialang-s3.julialang.org/bin/linux/x64/1.8/$archivename"
+    curl -OL "$url"
+
+    echo "==> Installing Julia..."
+    destdir="$HOME/opt/julia"
+    mkdir -p "$destdir"
+    tar -xvf "$archivename" -C "$destdir" --strip-components 1
     ;;
   *)
     echo "Unsupported OS!"
