@@ -1,5 +1,6 @@
 import Base.+
 import Base.-
+import DataStructures
 
 struct Vec2
     x::Int
@@ -69,8 +70,31 @@ function childs(state::State)
     return Iterators.map(p -> State(p, blizzards, size), destinations)
 end
 
+function estimate_remaining(state::State)
+    delta = something(state.pos, Vec2(0, -1)) - state.size
+    return abs(delta.x) + abs(delta.y)
+end
+
 function a_star_search(state::State)
-    
+    queue = DataStructures.PriorityQueue{Tuple{State,Int},Int}()
+    queue[(state, 0)] = estimate_remaining(state)
+    while !isempty(queue)
+        node = DataStructures.peek(queue)
+        current = node[1][1]
+        length = node[1][2]
+        cost = node[2]
+        DataStructures.dequeue!(queue)
+        println("Searching at ", current.pos, " with length ", length, " and cost ", cost)
+        if current.pos == current.size
+            return (current, length)
+        end
+        for child in childs(current)
+            child_length = length + 1
+            child_cost = child_length + estimate_remaining(child)
+            DataStructures.enqueue!(queue, (child, child_length), child_cost)
+        end
+    end
+    throw("No solution found")
 end
 
 function parse_dir(raw::Char)
@@ -96,17 +120,15 @@ function parse_input(lines::Vector{String})
     return State(nothing, blizzards, size)
 end
 
-lines = open("resources/demo.txt") do f
+lines = open("resources/demo2.txt") do f
     readlines(f)
 end
 
 state = parse_input(lines)
-for s in collect(childs(state))
-    println(s)
-    for s2 in collect(childs(s))
-        println("  ", s2)
-    end
-end
+result = a_star_search(state)
+final_state = result[1]
+final_length = result[2]
+println("Final state: ", final_state)
+println("Final length: ", final_length)
 
-# TODO: Implement Dijkstra
 # TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
