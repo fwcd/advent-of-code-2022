@@ -1,5 +1,3 @@
-#!/usr/bin/env julia
-
 import Base.+
 import Base.-
 
@@ -69,6 +67,10 @@ function childs(state::State)
     blizzards = next(state.blizzards, size)
     destinations = Iterators.filter(p -> isnothing(p) || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
     return Iterators.map(p -> State(p, blizzards, size), destinations)
+end
+
+function a_star_search(state::State)
+    
 end
 
 function parse_dir(raw::Char)
