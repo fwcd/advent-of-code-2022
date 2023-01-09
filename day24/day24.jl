@@ -1,5 +1,6 @@
 import Base.+
 import Base.-
+import Base.*
 import DataStructures
 
 struct Vec2
@@ -14,8 +15,9 @@ end
 
 struct State
     pos::Union{Vec2,Nothing}
-    blizzards::Vector{Blizzard}
+    time::Int
     size::Vec2
+    initial_blizzards::Vector{Blizzard}
 end
 
 function (+)(p::Vec2, q::Vec2)
@@ -24,6 +26,14 @@ end
 
 function (-)(p::Vec2, q::Vec2)
     Vec2(p.x - q.x, p.y - q.y)
+end
+
+function (*)(p::Vec2, q::Int)
+    Vec2(p.x * q, p.y * q)
+end
+
+function (*)(p::Int, q::Vec2)
+    Vec2(p * q.x, p * q.y)
 end
 
 function wrap(p::Vec2, q::Vec2)
@@ -50,16 +60,16 @@ function has_blizzard_at(pos::Vec2, blizzards::Vector{Blizzard})
     !Iterators.isempty(blizzards_at(pos, blizzards))
 end
 
-function next(blizzard::Blizzard, size::Vec2)
-    Blizzard(wrap(blizzard.pos + blizzard.dir, size), blizzard.dir)
+function blizzard_after(time::Int, size::Vec2, blizzard::Blizzard)
+    Blizzard(wrap(blizzard.pos + time * blizzard.dir, size), blizzard.dir)
 end
 
 function next(blizzards::Vector{Blizzard}, size::Vec2)
     collect(Iterators.map(b -> next(b, size), blizzards))
 end
 
-function next(state::State)
-    State(state.pos, next(state.blizzards, state.size), state.size)
+function blizzards_after(time::Int, size::Vec2, blizzards::Vector{Blizzard})
+    Iterators.map(b -> blizzard_after(time, size, b), blizzards)
 end
 
 function childs(state::State)
@@ -73,9 +83,10 @@ function childs(state::State)
         ]
     end
     size = state.size
-    blizzards = next(state.blizzards, size)
+    next_time = state.time + 1
+    blizzards = collect(blizzards_after(next_time, state.size, state.initial_blizzards))
     destinations = Iterators.filter(p -> isnothing(p) || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
-    return Iterators.map(p -> State(p, blizzards, size), destinations)
+    return Iterators.map(p -> State(p, next_time, size, state.initial_blizzards), destinations)
 end
 
 function pretty_dir(dir::Vec2)
@@ -116,11 +127,11 @@ function estimate_remaining(state::State)
 end
 
 function a_star_search(state::State)
-    queue = DataStructures.PriorityQueue{Tuple{State,Int},Int}()
+    queue = DataStructures.PriorityQueue{Tuple{State,Set{Vec2},Int},Int}()
     visited = Set{State}()
-    queue[(state, 0)] = estimate_remaining(state)
+    queue[(state, Set(), 0)] = estimate_remaining(state)
     while !isempty(queue)
-        ((current, len), cost) = DataStructures.peek(queue)
+        ((current, visited_poss, len), cost) = DataStructures.peek(queue)
         push!(visited, current)
         if mod(length(visited), 10_000) == 0
             println("Searching ", current.pos, " (", len, "/", cost, ")")
@@ -130,10 +141,14 @@ function a_star_search(state::State)
             return (current, len)
         end
         for child in childs(current)
-            if !in(child, visited)
+            if !in(child, visited) && (isnothing(child.pos) || !in(child.pos, visited_poss))
                 child_len = len + 1
                 child_cost = child_len + estimate_remaining(child)
-                DataStructures.enqueue!(queue, (child, child_len), child_cost)
+                child_visited_poss = Set(visited_poss)
+                if !isnothing(current.pos) && current.pos != child.pos
+                    push!(child_visited_poss, current.pos)
+                end
+                DataStructures.enqueue!(queue, (child, visited_poss, child_len), child_cost)
             end
         end
     end
@@ -160,7 +175,7 @@ function parse_input(lines::Vector{String})
     size = Vec2(width, height)
     parsed = Iterators.map(p -> Blizzard(p, parse_dir(lines[p.y + 1][p.x + 1])), positions(size))
     blizzards = collect(Iterators.filter(b -> !isnothing(b.dir), parsed))
-    return State(nothing, blizzards, size)
+    return State(nothing, 0, size, blizzards)
 end
 
 lines = open("resources/input.txt") do f
