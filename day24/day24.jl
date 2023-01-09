@@ -179,18 +179,14 @@ function parse_input(lines::Vector{String})
     return State(nothing, 0, size, blizzards)
 end
 
-lines = open("resources/demo2.txt") do f
+lines = open("resources/input.txt") do f
     readlines(f)
 end
 
 state = parse_input(lines)
 (final_state, path, final_length) = a_star_search(state)
 
-for step in path
-    println(pretty(step))
-    println()
-end
-# println(pretty(final_state))
+println(pretty(final_state))
 println("Part 1: ", final_length + 1)
 
 # TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
