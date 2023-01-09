@@ -1,3 +1,18 @@
+%{
+  import json
+
+  with open('paths.json', 'r') as f:
+    days = json.load(f)
+  
+  def format_day(day):
+    lang = day['lang']
+    path = day['path']
+    s = f"[{lang['name']}]({path})"
+    additional_notes = lang.get('additionalNotes', '')
+    if additional_notes:
+      s = f'{s} {additional_notes}'
+    return s
+}%
 # Advent of Code 2022
 
 [![Run (macOS)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml/badge.svg)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml)
@@ -5,31 +20,9 @@
 
 My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), written in 25 different programming languages.
 
-- [x] Day 01: [AppleScript](day01/src/day01.applescript)
-- [x] Day 02: [Vala](day02/src/day02.vala)
-- [x] Day 03: [Zig](day03/src/main.zig)
-- [x] Day 04: [Racket](day04/src/day04.rkt)
-- [x] Day 05: [Clojure](day05/src/day05/core.clj)
-- [x] Day 06: [CMake](day06/CMakeLists.txt)
-- [x] Day 07: [Perl](day07/src/day07.pl)
-- [x] Day 08: [Scala](day08/app/src/main/scala/day08/App.scala)
-- [x] Day 09: [Haskell](day09/app/Main.hs)
-- [x] Day 10: [C](day10/src/day10.c)
-- [x] Day 11: [Elixir](day11/lib/day11.ex)
-- [x] Day 12: [Java](day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java)
-- [x] Day 13: [JavaScript](day13/src/day13.js)
-- [x] Day 14: [OCaml](day14/bin/main.ml)
-- [x] Day 15: [Ruby](day15/bin/day15.rb)
-- [x] Day 16: [F#](day16/Program.fs)
-- [x] Day 17: [C#](day17/Program.cs)
-- [x] Day 18: [Apple Shortcuts](day18/day18.shortcut) ([yes, this one](https://support.apple.com/en-us/guide/shortcuts/welcome/ios))
-- [x] Day 19: [Rust](day19/src/main.rs)
-- [x] Day 20: [Objective-C](day20/src/day20.m)
-- [x] Day 21: [Prolog](day21/day21.pl)
-- [x] Day 22: [Swift](day22/Sources/Day22/main.swift)
-- [x] Day 23: [C++](day23/src/day23.cpp)
-- [x] Day 24: [Julia](day24/day24.jl)
-- [x] Day 25: [Python](day25/day25.py)
+% for i, day in enumerate(days):
+- [x] Day ${f'{i + 1:02}'}: ${format_day(day)}
+% end
 
 ## Scripts
 

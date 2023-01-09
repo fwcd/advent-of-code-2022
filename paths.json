@@ -24,7 +24,7 @@
   {
     "lang": {
       "codemirror": "scheme",
-      "name": "Scheme"
+      "name": "Racket"
     },
     "path": "day04/src/day04.rkt"
   },
