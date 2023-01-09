@@ -162,12 +162,19 @@ impl<T> IntoIterator for Materials<T> {
     type IntoIter = array::IntoIter<T, 4>;
     type Item = T;
 
+    /// Iterates the mapped value for every material in the order
+    /// 1. ore
+    /// 2. clay
+    /// 3. obsidian
+    /// 4. geode
     fn into_iter(self) -> Self::IntoIter {
         [self.ore, self.clay, self.obsidian, self.geode].into_iter()
     }
 }
 
 impl<T> From<HashMap<Material, T>> for Materials<T> where T: Clone + Default {
+    /// Parses a (dynamic) `HashMap<Material, T>` into a (fixed-size) `Materials<T>`.
+    /// Every key not present is defaulted to `Default::default()`.
     fn from(map: HashMap<Material, T>) -> Self {
         Self {
             ore: map.get(&Material::Ore).cloned().unwrap_or_default(),
@@ -181,6 +188,7 @@ impl<T> From<HashMap<Material, T>> for Materials<T> where T: Clone + Default {
 impl FromStr for Robot {
     type Err = String;
 
+    /// Parses a robot template from the given string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         const PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"Each (?P<name>\w+) robot costs (?P<raw_costs>.+)").unwrap());
         const COST_PATTERN: Lazy<Regex> = Lazy::new(|| Regex::new(r"(\d+) (\w+)").unwrap());
@@ -200,6 +208,7 @@ impl FromStr for Robot {
 impl FromStr for Blueprint {
     type Err = String;
 
+    /// Parses a blueprint from the given string.
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let robots = s.split(":")
             .last().unwrap()
