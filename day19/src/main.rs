@@ -25,7 +25,9 @@ struct Materials<T> {
 /// A robot template as part of a blueprint.
 #[derive(Debug, Default, Clone, Copy)]
 struct Robot {
+    /// The material the robot produces.
     material: Option<Material>,
+    /// The per-material costs of the robot.
     costs: Materials<usize>,
 }
 
@@ -33,7 +35,10 @@ struct Robot {
 /// the maximum cost of any robot for every material used for pruning.
 #[derive(Debug, Clone)]
 struct Blueprint {
+    /// The robot templates.
     robots: Materials<Robot>,
+    /// The precomputed map of the maximum cost of any robot for the
+    /// corresponding material.
     max_costs: Materials<usize>,
 }
 
@@ -41,11 +46,19 @@ struct Blueprint {
 /// correspond to searches for solutions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct State {
+    /// The robots owned, each actively mining its material.
     robots: Materials<usize>,
+    /// The materials owned.
     materials: Materials<usize>,
+    /// The remaining time in minutes.
     remaining_minutes: usize,
+    /// The elapsed time in minutes.
     elapsed_minutes: usize,
+    /// The material of the robot purchased most recently.
+    /// `None` at the initial step.
     last_robot: Option<Material>,
+    /// The materials owned at the last minute.
+    /// Zero for each material at the initial step.
     last_materials: Materials<usize>,
 }
 
@@ -384,12 +397,14 @@ struct Args {
 fn main() {
     let args = Args::parse();
 
+    // Parse the blueprints from the input
     let blueprints = fs::read_to_string(args.input).unwrap()
         .split('\n')
         .filter(|l| !l.is_empty())
         .filter_map(|l| l.parse().ok())
         .collect::<Vec<Blueprint>>();
     
+    // Perform the part 1 search if needed
     if !args.skip_part1 {
         let part1 = blueprints.par_iter().enumerate()
             .take(if args.smoke { 1 } else { args.part1_blueprints })
@@ -399,6 +414,7 @@ fn main() {
         println!("Part 1: {}", part1);
     }
 
+    // Perform the part 2 search if needed
     if !args.skip_part2 && !args.smoke {
         let part2 = blueprints.par_iter().enumerate()
             .take(args.part2_blueprints)
