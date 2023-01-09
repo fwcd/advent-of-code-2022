@@ -135,7 +135,7 @@ function a_star_search(state::State)
     while !isempty(queue)
         ((current, path, len), cost) = DataStructures.peek(queue)
         push!(visited, current)
-        if mod(current.time, 1000) == 0
+        if mod(iterations, 1000) == 0
             println("Searching at ", current.pos, " (", len, "/", cost, ")")
         end
         DataStructures.dequeue!(queue)
