@@ -139,7 +139,7 @@
             "description": "The human-readable name of the language."
           }
         },
-        "required": ["codemirror", "name"]
+        "required": ["name"]
       },
       "path": {
         "type": "string",
