@@ -21,58 +21,67 @@ struct State
     initial_blizzards::Vector{Blizzard}
 end
 
+"Performs vector addition."
 function (+)(p::Vec2, q::Vec2)
     Vec2(p.x + q.x, p.y + q.y)
 end
 
+"Performs vector subtraction."
 function (-)(p::Vec2, q::Vec2)
     Vec2(p.x - q.x, p.y - q.y)
 end
 
+"Scales a vector by the given factor."
 function (*)(p::Vec2, q::Int)
     Vec2(p.x * q, p.y * q)
 end
 
+"Scales a vector by the given factor."
 function (*)(p::Int, q::Vec2)
     Vec2(p * q.x, p * q.y)
 end
 
+"Performs elementwise modulo within the range (1:q[element])."
 function wrap(p::Vec2, q::Vec2)
     Vec2(mod(p.x - 1, q.x) + 1, mod(p.y - 1, q.y) + 1)
 end
 
+"Iterates all positions in the rectangle bounded by the given corners."
 function positions(top_left::Vec2, bottom_right::Vec2)
     Iterators.map(t -> Vec2(t[1], t[2]), Iterators.product(top_left.x:bottom_right.x, top_left.y:bottom_right.y))
 end
 
+"Iterates all positions in the rectangle bounded by (1, 1) and the given size."
 function positions(size::Vec2)
     positions(Vec2(1, 1), size)
 end
 
+"Checks whether the given position is between (1, 1) and the given size."
 function in_bounds(pos::Vec2, size::Vec2)
     pos.x >= 1 && pos.x <= size.x && pos.y >= 1 && pos.y <= size.y
 end
 
+"Finds all blizzards at the given position."
 function blizzards_at(pos::Vec2, blizzards::Vector{Blizzard})
     Iterators.filter(b -> b.pos == pos, blizzards)
 end
 
+"Checks whether there is a blizzard at the given position."
 function has_blizzard_at(pos::Vec2, blizzards::Vector{Blizzard})
     !Iterators.isempty(blizzards_at(pos, blizzards))
 end
 
+"Computes the blizzard after the given number of time steps on a board bounded by the given size."
 function blizzard_after(time::Int, size::Vec2, blizzard::Blizzard)
     Blizzard(wrap(blizzard.pos + (time * blizzard.dir), size), blizzard.dir)
 end
 
-function next(blizzards::Vector{Blizzard}, size::Vec2)
-    collect(Iterators.map(b -> next(b, size), blizzards))
-end
-
+"Computes the blizzards after the given number of time steps on a board bounded by the given size."
 function blizzards_after(time::Int, size::Vec2, blizzards::Vector{Blizzard})
     Iterators.map(b -> blizzard_after(time, size, b), blizzards)
 end
 
+"Finds the next possible states after the given state."
 function childs(state::State)
     right_after_start = Vec2(1, 1)
     right_before_goal = state.size
@@ -102,6 +111,7 @@ function childs(state::State)
     return Iterators.map(p -> State(p, next_time, size, goal, state.initial_blizzards), destinations)
 end
 
+"Prettyprints the given direction using a single character."
 function pretty_dir(dir::Vec2)
     if dir == Vec2(1, 0)
         '>'
@@ -116,6 +126,7 @@ function pretty_dir(dir::Vec2)
     end
 end
 
+"Prettyprints the given state."
 function pretty(state::State)
     blizzards = collect(blizzards_after(state.time, state.size, state.initial_blizzards))
     return Iterators.join(Iterators.map(y -> Iterators.join(Iterators.map(x -> begin
@@ -135,11 +146,22 @@ function pretty(state::State)
     end, 1:state.size.x)), 1:state.size.y), "\n")
 end
 
+"""
+Estimates the remaining distance to the given destination.
+The implementation uses the Manhattan metric to compute a
+lower bound for the actual minimum path, making this an
+admissible and monotonic heuristic for A* search.
+"""
 function estimate_remaining(state::State, destination::Vec2)
     delta = something(state.pos, Vec2(0, -1)) - destination
     return abs(delta.x) + abs(delta.y)
 end
 
+"""
+Finds the shortest path to the given destination using A* search.
+Returns a tuple of the final state, the path to the final state and
+the total length of the path.
+"""
 function a_star_search(state::State, destination::Vec2)
     queue = DataStructures.PriorityQueue{Tuple{State,Vector{State},Int},Int}()
     visited = Set{State}()
@@ -169,6 +191,7 @@ function a_star_search(state::State, destination::Vec2)
     throw("No solution found")
 end
 
+"Parses the given character to a direction."
 function parse_dir(raw::Char)
     if raw == '>'
         Vec2(1, 0)
@@ -183,6 +206,7 @@ function parse_dir(raw::Char)
     end
 end
 
+"Parses the given input to a state."
 function parse_input(lines::Vector{String})
     height = length(lines) - 2
     width = length(lines[1]) - 2
@@ -193,11 +217,15 @@ function parse_input(lines::Vector{String})
     return State(nothing, 0, size, goal, blizzards)
 end
 
+# Read and parse input
+
 lines = open("resources/input.txt") do f
     readlines(f)
 end
-
 state = parse_input(lines)
+
+# Compute part 1
+
 start = Vec2(1, 1)
 goal = state.goal
 (final_state, path, final_length) = a_star_search(state, goal)
@@ -206,6 +234,8 @@ println(pretty(final_state))
 
 part1 = final_length
 println("Part 1: ", part1)
+
+# Compute part 2
 
 (back_at_start_state, _, length_to_start) = a_star_search(final_state, start)
 println("Back to the start took ", length_to_start)
