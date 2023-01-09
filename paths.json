@@ -95,5 +95,9 @@
   {
     "lang": "julia",
     "path": "day24/day24.jl"
+  },
+  {
+    "lang": "python",
+    "path": "day25/day25.py"
   }
 ]

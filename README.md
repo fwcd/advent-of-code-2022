@@ -29,7 +29,7 @@ My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), writte
 - [x] Day 22: Swift
 - [x] Day 23: C++
 - [x] Day 24: Julia
-- [ ] Day 25
+- [ ] Day 25: Python
 
 ## Scripts
 
