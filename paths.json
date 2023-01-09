@@ -1,103 +1,178 @@
 [
   {
-    "lang": "applescript",
+    "lang": {
+      "codemirror": "applescript",
+      "name": "AppleScript"
+    },
     "path": "day01/src/day01.applescript",
     "encoding": "macintosh"
   },
   {
-    "lang": "vala",
+    "lang": {
+      "codemirror": "vala",
+      "name": "Vala"
+    },
     "path": "day02/src/day02.vala"
   },
   {
-    "lang": "zig",
+    "lang": {
+      "codemirror": "zig",
+      "name": "Zig"
+    },
     "path": "day03/src/main.zig"
   },
   {
-    "lang": "scheme",
+    "lang": {
+      "codemirror": "scheme",
+      "name": "Scheme"
+    },
     "path": "day04/src/day04.rkt"
   },
   {
-    "lang": "clojure",
+    "lang": {
+      "codemirror": "clojure",
+      "name": "Clojure"
+    },
     "path": "day05/src/day05/core.clj"
   },
   {
-    "lang": "cmake",
+    "lang": {
+      "codemirror": "cmake",
+      "name": "CMake"
+    },
     "path": "day06/CMakeLists.txt"
   },
   {
-    "lang": "perl",
+    "lang": {
+      "codemirror": "perl",
+      "name": "Perl"
+    },
     "path": "day07/src/day07.pl"
   },
   {
-    "lang": "scala",
+    "lang": {
+      "codemirror": "scala",
+      "name": "Scala"
+    },
     "path": "day08/app/src/main/scala/day08/App.scala"
   },
   {
-    "lang": "haskell",
+    "lang": {
+      "codemirror": "haskell",
+      "name": "Haskell"
+    },
     "path": "day09/app/Main.hs"
   },
   {
-    "lang": "clike",
+    "lang": {
+      "codemirror": "clike",
+      "name": "C"
+    },
     "path": "day10/src/day10.c"
   },
   {
-    "lang": "elixir",
+    "lang": {
+      "codemirror": "elixir",
+      "name": "Elixir"
+    },
     "path": "day11/lib/day11.ex"
   },
   {
-    "lang": "java",
+    "lang": {
+      "codemirror": "java",
+      "name": "Java"
+    },
     "path": "day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java"
   },
   {
-    "lang": "javascript",
+    "lang": {
+      "codemirror": "javascript",
+      "name": "JavaScript"
+    },
     "path": "day13/src/day13.js"
   },
   {
-    "lang": "ocaml",
+    "lang": {
+      "codemirror": "ocaml",
+      "name": "OCaml"
+    },
     "path": "day14/bin/main.ml"
   },
   {
-    "lang": "ruby",
+    "lang": {
+      "codemirror": "ruby",
+      "name": "Ruby"
+    },
     "path": "day15/bin/day15.rb"
   },
   {
-    "lang": "fsharp",
+    "lang": {
+      "codemirror": "fsharp",
+      "name": "F#"
+    },
     "path": "day16/Program.fs"
   },
   {
-    "lang": "csharp",
+    "lang": {
+      "codemirror": "csharp",
+      "name": "C#"
+    },
     "path": "day17/Program.cs"
   },
   {
+    "lang": {
+      "name": "Apple Shortcuts"
+    },
     "path": "day18/day18.shortcut",
     "binary": true
   },
   {
-    "lang": "rust",
+    "lang": {
+      "codemirror": "rust",
+      "name": "Rust"
+    },
     "path": "day19/src/main.rs"
   },
   {
-    "lang": "clike",
+    "lang": {
+      "codemirror": "clike",
+      "name": "Objective-C"
+    },
     "path": "day20/src/day20.m"
   },
   {
-    "lang": "prolog",
+    "lang": {
+      "codemirror": "prolog",
+      "name": "Prolog"
+    },
     "path": "day21/day21.pl"
   },
   {
-    "lang": "swift",
+    "lang": {
+      "codemirror": "swift",
+      "name": "Swift"
+    },
     "path": "day22/Sources/Day22/main.swift"
   },
   {
-    "lang": "clike",
+    "lang": {
+      "codemirror": "clike",
+      "name": "C++"
+    },
     "path": "day23/src/day23.cpp"
   },
   {
-    "lang": "julia",
+    "lang": {
+      "codemirror": "julia",
+      "name": "Julia"
+    },
     "path": "day24/day24.jl"
   },
   {
-    "lang": "python",
+    "lang": {
+      "codemirror": "python",
+      "name": "Python"
+    },
     "path": "day25/day25.py"
   }
 ]
