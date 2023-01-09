@@ -61,7 +61,7 @@ function has_blizzard_at(pos::Vec2, blizzards::Vector{Blizzard})
 end
 
 function blizzard_after(time::Int, size::Vec2, blizzard::Blizzard)
-    Blizzard(wrap(blizzard.pos + time * blizzard.dir, size), blizzard.dir)
+    Blizzard(wrap(blizzard.pos + (time * blizzard.dir), size), blizzard.dir)
 end
 
 function next(blizzards::Vector{Blizzard}, size::Vec2)
@@ -83,7 +83,7 @@ function childs(state::State)
         ]
     end
     size = state.size
-    next_time = state.time + 1
+    next_time = mod(state.time + 1, lcm(state.size.x, state.size.y))
     blizzards = collect(blizzards_after(next_time, state.size, state.initial_blizzards))
     destinations = Iterators.filter(p -> isnothing(p) || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
     return Iterators.map(p -> State(p, next_time, size, state.initial_blizzards), destinations)
@@ -104,16 +104,17 @@ function pretty_dir(dir::Vec2)
 end
 
 function pretty(state::State)
-    Iterators.join(Iterators.map(y -> Iterators.join(Iterators.map(x -> begin
+    blizzards = collect(blizzards_after(state.time, state.size, state.initial_blizzards))
+    return Iterators.join(Iterators.map(y -> Iterators.join(Iterators.map(x -> begin
         pos = Vec2(x, y)
-        blizzards = collect(blizzards_at(pos, state.blizzards))
+        bs = collect(blizzards_at(pos, blizzards))
         if state.pos == pos
             'E'
-        elseif length(blizzards) > 0
-            if length(blizzards) == 1
-                pretty_dir(blizzards[1].dir)
+        elseif length(bs) > 0
+            if length(bs) == 1
+                pretty_dir(bs[1].dir)
             else
-                string(length(blizzards))
+                string(length(bs))
             end
         else
             '.'
@@ -127,26 +128,30 @@ function estimate_remaining(state::State)
 end
 
 function a_star_search(state::State)
-    queue = DataStructures.PriorityQueue{Tuple{State,Int},Int}()
+    queue = DataStructures.PriorityQueue{Tuple{State,Vector{State},Int},Int}()
     visited = Set{State}()
-    queue[(state, 0)] = estimate_remaining(state)
+    queue[(state, [], 0)] = estimate_remaining(state)
+    iterations = 0
     while !isempty(queue)
-        ((current, len), cost) = DataStructures.peek(queue)
+        ((current, path, len), cost) = DataStructures.peek(queue)
         push!(visited, current)
-        if mod(length(visited), 10_000) == 0
-            println("Searching ", current.pos, " (", len, "/", cost, ")")
+        if mod(current.time, 1000) == 0
+            println("Searching at ", current.pos, " (", len, "/", cost, ")")
         end
         DataStructures.dequeue!(queue)
         if current.pos == current.size
-            return (current, len)
+            println("Found solution after ", iterations, " iterations")
+            return (current, path, len)
         end
         for child in childs(current)
-            if !in(child, visited) && isnothing(child.pos)
-                child_len = len + 1
-                child_cost = child_len + estimate_remaining(child)
-                DataStructures.enqueue!(queue, (child, child_len), child_cost)
+            child_len = len + 1
+            child_cost = child_len + estimate_remaining(child)
+            if !in(child, visited)
+                push!(visited, child)
+                DataStructures.enqueue!(queue, (child, [path; [current]], child_len), child_cost)
             end
         end
+        iterations += 1
     end
     throw("No solution found")
 end
@@ -174,14 +179,18 @@ function parse_input(lines::Vector{String})
     return State(nothing, 0, size, blizzards)
 end
 
-lines = open("resources/input.txt") do f
+lines = open("resources/demo2.txt") do f
     readlines(f)
 end
 
 state = parse_input(lines)
-(final_state, final_length) = a_star_search(state)
+(final_state, path, final_length) = a_star_search(state)
 
-println(pretty(final_state))
+for step in path
+    println(pretty(step))
+    println()
+end
+# println(pretty(final_state))
 println("Part 1: ", final_length + 1)
 
 # TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
