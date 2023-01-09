@@ -23,7 +23,7 @@
 My solutions to the [Advent of Code 2022](https://adventofcode.com/2022), written in 25 different programming languages.
 
 % for i, day in enumerate(days):
-- [x] Day ${f'{i + 1:02}'}: ${format_day(day)}
+- [${'x' if day.get('completed', False) else ' '}] Day ${f'{i + 1:02}'}: ${format_day(day)}
 % end
 
 ## Scripts

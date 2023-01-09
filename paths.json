@@ -5,6 +5,7 @@
       "name": "AppleScript"
     },
     "path": "day01/src/day01.applescript",
+    "completed": true,
     "encoding": "macintosh"
   },
   {
@@ -12,112 +13,128 @@
       "codemirror": "vala",
       "name": "Vala"
     },
-    "path": "day02/src/day02.vala"
+    "path": "day02/src/day02.vala",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "zig",
       "name": "Zig"
     },
-    "path": "day03/src/main.zig"
+    "path": "day03/src/main.zig",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "scheme",
       "name": "Racket"
     },
-    "path": "day04/src/day04.rkt"
+    "path": "day04/src/day04.rkt",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "clojure",
       "name": "Clojure"
     },
-    "path": "day05/src/day05/core.clj"
+    "path": "day05/src/day05/core.clj",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "cmake",
       "name": "CMake"
     },
-    "path": "day06/CMakeLists.txt"
+    "path": "day06/CMakeLists.txt",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "perl",
       "name": "Perl"
     },
-    "path": "day07/src/day07.pl"
+    "path": "day07/src/day07.pl",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "scala",
       "name": "Scala"
     },
-    "path": "day08/app/src/main/scala/day08/App.scala"
+    "path": "day08/app/src/main/scala/day08/App.scala",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "haskell",
       "name": "Haskell"
     },
-    "path": "day09/app/Main.hs"
+    "path": "day09/app/Main.hs",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "clike",
       "name": "C"
     },
-    "path": "day10/src/day10.c"
+    "path": "day10/src/day10.c",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "elixir",
       "name": "Elixir"
     },
-    "path": "day11/lib/day11.ex"
+    "path": "day11/lib/day11.ex",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "java",
       "name": "Java"
     },
-    "path": "day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java"
+    "path": "day12/app/src/main/java/dev/fwcd/aoc2022/day12/App.java",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "javascript",
       "name": "JavaScript"
     },
-    "path": "day13/src/day13.js"
+    "path": "day13/src/day13.js",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "ocaml",
       "name": "OCaml"
     },
-    "path": "day14/bin/main.ml"
+    "path": "day14/bin/main.ml",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "ruby",
       "name": "Ruby"
     },
-    "path": "day15/bin/day15.rb"
+    "path": "day15/bin/day15.rb",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "fsharp",
       "name": "F#"
     },
-    "path": "day16/Program.fs"
+    "path": "day16/Program.fs",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "csharp",
       "name": "C#"
     },
-    "path": "day17/Program.cs"
+    "path": "day17/Program.cs",
+    "completed": true
   },
   {
     "lang": {
@@ -125,6 +142,7 @@
       "additionalNotes": "([yes, this one](https://support.apple.com/en-us/guide/shortcuts/welcome/ios))"
     },
     "path": "day18/day18.shortcut",
+    "completed": true,
     "binary": true
   },
   {
@@ -132,48 +150,55 @@
       "codemirror": "rust",
       "name": "Rust"
     },
-    "path": "day19/src/main.rs"
+    "path": "day19/src/main.rs",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "clike",
       "name": "Objective-C"
     },
-    "path": "day20/src/day20.m"
+    "path": "day20/src/day20.m",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "prolog",
       "name": "Prolog"
     },
-    "path": "day21/day21.pl"
+    "path": "day21/day21.pl",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "swift",
       "name": "Swift"
     },
-    "path": "day22/Sources/Day22/main.swift"
+    "path": "day22/Sources/Day22/main.swift",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "clike",
       "name": "C++"
     },
-    "path": "day23/src/day23.cpp"
+    "path": "day23/src/day23.cpp",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "julia",
       "name": "Julia"
     },
-    "path": "day24/day24.jl"
+    "path": "day24/day24.jl",
+    "completed": true
   },
   {
     "lang": {
       "codemirror": "python",
       "name": "Python"
     },
-    "path": "day25/day25.py"
+    "path": "day25/day25.py",
+    "completed": true
   }
 ]

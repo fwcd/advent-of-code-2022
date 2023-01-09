@@ -192,6 +192,11 @@
         "type": "boolean",
         "description": "Whether the file is in a binary (i.e. non-text) format.",
         "default": false
+      },
+      "completed": {
+        "type": "boolean",
+        "description": "Whether the day has been completed (fully).",
+        "default": false
       }
     },
     "required": ["path"]
