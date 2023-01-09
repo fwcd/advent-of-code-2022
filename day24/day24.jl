@@ -127,11 +127,11 @@ function estimate_remaining(state::State)
 end
 
 function a_star_search(state::State)
-    queue = DataStructures.PriorityQueue{Tuple{State,Set{Vec2},Int},Int}()
+    queue = DataStructures.PriorityQueue{Tuple{State,Int},Int}()
     visited = Set{State}()
-    queue[(state, Set(), 0)] = estimate_remaining(state)
+    queue[(state, 0)] = estimate_remaining(state)
     while !isempty(queue)
-        ((current, visited_poss, len), cost) = DataStructures.peek(queue)
+        ((current, len), cost) = DataStructures.peek(queue)
         push!(visited, current)
         if mod(length(visited), 10_000) == 0
             println("Searching ", current.pos, " (", len, "/", cost, ")")
@@ -141,14 +141,10 @@ function a_star_search(state::State)
             return (current, len)
         end
         for child in childs(current)
-            if !in(child, visited) && (isnothing(child.pos) || !in(child.pos, visited_poss))
+            if !in(child, visited) && isnothing(child.pos)
                 child_len = len + 1
                 child_cost = child_len + estimate_remaining(child)
-                child_visited_poss = Set(visited_poss)
-                if !isnothing(current.pos) && current.pos != child.pos
-                    push!(child_visited_poss, current.pos)
-                end
-                DataStructures.enqueue!(queue, (child, visited_poss, child_len), child_cost)
+                DataStructures.enqueue!(queue, (child, child_len), child_cost)
             end
         end
     end
