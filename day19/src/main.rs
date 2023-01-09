@@ -5,11 +5,15 @@ use once_cell::sync::Lazy;
 use rayon::prelude::*;
 use regex::Regex;
 
+/// A material kind.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 enum Material {
     Ore, Clay, Obsidian, Geode
 }
 
+/// A map of materials to some other type.
+/// Since we know all of the materials (i.e. keys), we can use
+/// a fixed size struct for efficiency over e.g. a `HashMap<Material, T>`.
 #[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 struct Materials<T> {
     ore: T,
@@ -18,18 +22,23 @@ struct Materials<T> {
     geode: T,
 }
 
+/// A robot template as part of a blueprint.
 #[derive(Debug, Default, Clone, Copy)]
 struct Robot {
     material: Option<Material>,
     costs: Materials<usize>,
 }
 
+/// Robot templates for every material. Includes a precomputed map of
+/// the maximum cost of any robot for every material used for pruning.
 #[derive(Debug, Clone)]
 struct Blueprint {
     robots: Materials<Robot>,
     max_costs: Materials<usize>,
 }
 
+/// A state at a certain point in time. Searches over the space of `State`s
+/// correspond to searches for solutions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 struct State {
     robots: Materials<usize>,
@@ -191,6 +200,8 @@ impl FromStr for Blueprint {
 }
 
 impl State {
+    /// Creates a new `State` using the given number of minutes remaining.
+    /// The initial state provides a single ore robot and no material.
     fn new(remaining_minutes: usize) -> Self {
         Self {
             robots: Materials { ore: 1, ..Default::default() },
@@ -202,18 +213,21 @@ impl State {
         }
     }
 
-    // TODO: Fixed size instead of `Vec`s?
-
+    /// Performs a step, adding the resources each robot mines and
+    /// updating the elapsed and remaining time.
     fn step(&mut self) {
         self.materials += self.robots;
         self.remaining_minutes -= 1;
         self.elapsed_minutes += 1;
     }
 
+    /// Spends the given number of each material.
     fn spend(&mut self, deltas: Materials<usize>) {
         self.materials = self.materials.zip(deltas, |c, d| c - d);
     }
 
+    /// Computes the next state after purchasing the given robot.
+    /// Returns `None` if the material is insufficient to buy the robot.
     fn next(&self, robot: Option<&Robot>) -> Option<Self> {
         let mut next = *self;
         if let Some(robot) = robot {
@@ -232,6 +246,11 @@ impl State {
         Some(next)
     }
 
+    /// Checks whether building the given robot makes sense in the context
+    /// of the search for the maximum number of obtainable geodes. Returning
+    /// `false` is effectively equivalent to pruning the corresponding branch
+    /// in the DFS tree. Since the search space is huge, pruning branches is
+    /// one of the most effective ways to reduce the search time.
     fn should_build(&self, robot: &Robot, blueprint: &Blueprint) -> bool {
         // Don't build a robot in the last minute.
         match (self.remaining_minutes, robot.material) {
@@ -255,6 +274,7 @@ impl State {
         true
     }
 
+    /// Finds the next states from this state using the given blueprint.
     fn childs<'a>(&'a self, blueprint: &'a Blueprint) -> impl Iterator<Item = Self> + 'a {
         iter::once(self.next(None))
             .chain(blueprint.robots.into_iter()
@@ -263,11 +283,10 @@ impl State {
             .flatten()
     }
 
+    /// Finds the minimum number of minutes until (even without considering the
+    /// material costs) we could possibly have a geode robot. This value is
+    /// determined by our maximum 'robot level'.
     fn minimum_minutes_to_geode_robot(&self) -> usize {
-        // There is a minimum number of minutes until (even without considering the
-        // material costs) we could possibly have a geode robot. This value is
-        // determined by our maximum 'robot level'.
-
         if self.robots.geode > 0 {
             0
         } else if self.robots.obsidian > 0 {
@@ -279,6 +298,9 @@ impl State {
         }
     }
 
+    /// Performs a depth-first search for the maximum number of geodes that could
+    /// be obtained by any course of action. Uses a number of pruning strategies
+    /// to reduce the (very large) search space.
     fn dfs_geodes(&self, blueprint: &Blueprint, print_depth: usize) -> usize {
         if self.elapsed_minutes < print_depth {
             let indent = iter::repeat(' ').take(self.elapsed_minutes).into_iter().collect::<String>();
@@ -302,6 +324,7 @@ impl State {
 }
 
 impl Blueprint {
+    /// Creates a new `Blueprint` from the given robot templates.
     fn new(robots: Materials<Robot>) -> Self {
         let max_costs = robots.into_iter()
             .map(|r| r.costs)
@@ -311,6 +334,9 @@ impl Blueprint {
         Self { robots, max_costs }
     }
 
+    /// Computes the maximum number of geodes obtainable within the
+    /// given number of minutes. The `print_depth` indicates to which
+    /// depth debug log lines should be output.
     fn max_geodes(&self, remaining_minutes: usize, print_depth: usize) -> usize {
         State::new(remaining_minutes).dfs_geodes(self, print_depth)
     }
