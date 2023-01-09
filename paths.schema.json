@@ -137,6 +137,10 @@
           "name": {
             "type": "string",
             "description": "The human-readable name of the language."
+          },
+          "additionalNotes": {
+            "type": "string",
+            "description": "Additional notes to be added to the README."
           }
         },
         "required": ["name"]
