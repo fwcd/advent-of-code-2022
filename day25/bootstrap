@@ -9,6 +9,7 @@ case $(uname -s) in
     brew install python@3
     ;;
   Linux)
+    . /etc/os-release
     if [ "$ID_LIKE" == debian ]; then
       echo "==> Installing Python via APT..."
       sudo apt-get install -y python3
