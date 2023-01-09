@@ -1,3 +1,5 @@
+<!-- Automatically generated from README.md.gyb, do not edit directly! -->
+
 # Advent of Code 2022
 
 [![Run (macOS)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml/badge.svg)](https://github.com/fwcd/advent-of-code-2022/actions/workflows/run-macos.yml)
