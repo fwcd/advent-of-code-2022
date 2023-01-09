@@ -17,6 +17,7 @@ struct State
     pos::Union{Vec2,Nothing}
     time::Int
     size::Vec2
+    goal::Vec2
     initial_blizzards::Vector{Blizzard}
 end
 
@@ -73,20 +74,32 @@ function blizzards_after(time::Int, size::Vec2, blizzards::Vector{Blizzard})
 end
 
 function childs(state::State)
+    right_after_start = Vec2(1, 1)
+    right_before_goal = state.size
+
     neighbors = if isnothing(state.pos)
-        [nothing, Vec2(1, 1)]
+        # We're at the start
+        [state.pos, right_after_start]
+    elseif state.pos == state.goal
+        # We're at the goal
+        [state.pos, right_before_goal]
     else
         [
-            state.pos - Vec2(0, 1),
-            state.pos - Vec2(1, 0), state.pos, state.pos + Vec2(1, 0),
-            state.pos + Vec2(0, 1),
+            [
+                state.pos - Vec2(0, 1),
+                state.pos - Vec2(1, 0), state.pos, state.pos + Vec2(1, 0),
+                state.pos + Vec2(0, 1),
+            ];
+            # We need to treat start and goal separately since they are outside the bounds
+            (state.pos == right_after_start ? [nothing] : []);
+            (state.pos == right_before_goal ? [state.goal] : [])
         ]
     end
     size = state.size
     next_time = mod(state.time + 1, lcm(state.size.x, state.size.y))
     blizzards = collect(blizzards_after(next_time, state.size, state.initial_blizzards))
-    destinations = Iterators.filter(p -> isnothing(p) || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
-    return Iterators.map(p -> State(p, next_time, size, state.initial_blizzards), destinations)
+    destinations = Iterators.filter(p -> isnothing(p) || p == state.goal || (in_bounds(p, size) && !has_blizzard_at(p, blizzards)), neighbors)
+    return Iterators.map(p -> State(p, next_time, size, goal, state.initial_blizzards), destinations)
 end
 
 function pretty_dir(dir::Vec2)
@@ -122,15 +135,15 @@ function pretty(state::State)
     end, 1:state.size.x)), 1:state.size.y), "\n")
 end
 
-function estimate_remaining(state::State)
-    delta = something(state.pos, Vec2(0, -1)) - state.size
+function estimate_remaining(state::State, destination::Vec2)
+    delta = something(state.pos, Vec2(0, -1)) - destination
     return abs(delta.x) + abs(delta.y)
 end
 
-function a_star_search(state::State)
+function a_star_search(state::State, destination::Vec2)
     queue = DataStructures.PriorityQueue{Tuple{State,Vector{State},Int},Int}()
     visited = Set{State}()
-    queue[(state, [], 0)] = estimate_remaining(state)
+    queue[(state, [], 0)] = estimate_remaining(state, destination)
     iterations = 0
     while !isempty(queue)
         ((current, path, len), cost) = DataStructures.peek(queue)
@@ -139,13 +152,13 @@ function a_star_search(state::State)
             println("Searching at ", current.pos, " (", len, "/", cost, ")")
         end
         DataStructures.dequeue!(queue)
-        if current.pos == current.size
+        if current.pos == destination
             println("Found solution after ", iterations, " iterations")
             return (current, path, len)
         end
         for child in childs(current)
             child_len = len + 1
-            child_cost = child_len + estimate_remaining(child)
+            child_cost = child_len + estimate_remaining(child, destination)
             if !in(child, visited)
                 push!(visited, child)
                 DataStructures.enqueue!(queue, (child, [path; [current]], child_len), child_cost)
@@ -174,9 +187,10 @@ function parse_input(lines::Vector{String})
     height = length(lines) - 2
     width = length(lines[1]) - 2
     size = Vec2(width, height)
+    goal = size + Vec2(0, 1)
     parsed = Iterators.map(p -> Blizzard(p, parse_dir(lines[p.y + 1][p.x + 1])), positions(size))
     blizzards = collect(Iterators.filter(b -> !isnothing(b.dir), parsed))
-    return State(nothing, 0, size, blizzards)
+    return State(nothing, 0, size, goal, blizzards)
 end
 
 lines = open("resources/input.txt") do f
@@ -184,9 +198,21 @@ lines = open("resources/input.txt") do f
 end
 
 state = parse_input(lines)
-(final_state, path, final_length) = a_star_search(state)
+start = Vec2(1, 1)
+goal = state.goal
+(final_state, path, final_length) = a_star_search(state, goal)
 
 println(pretty(final_state))
-println("Part 1: ", final_length + 1)
+
+part1 = final_length
+println("Part 1: ", part1)
+
+(back_at_start_state, _, length_to_start) = a_star_search(final_state, start)
+println("Back to the start took ", length_to_start)
+(_, _, length_to_goal_again) = a_star_search(back_at_start_state, goal)
+println("Back to the goal took ", length_to_goal_again)
+
+part2 = final_length + length_to_start + length_to_goal_again
+println("Part 2: ", part2)
 
 # TODO: Find a more efficient way to represent blizzards (e.g. as a multi-dict?)
